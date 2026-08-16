@@ -25,4 +25,4 @@
 
 * **Paleta Cromática:** Inspirada en los Piratas Heart — Amarillo quirúrgico (`#FFD700`), Negro, Blanco y toques de verde/azul médico.
 * **Interfaz Temática:** Componentes visuales e iconografía inspirados en el universo de *One Piece* y la nave *Polar Tang*.
-* 
+  
