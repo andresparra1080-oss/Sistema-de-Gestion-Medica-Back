@@ -1,0 +1,114 @@
+Instalacion y ejecucion del proyecto en Windows
+
+REQUISITOS:
+- Windows 10 o 11
+- Git
+- MSYS2 instalado
+- CMake
+- MinGW 64-bit
+- Acceso a internet para descargar dependencias
+
+------------------------------------------------------------
+PASO 1: Instalar MSYS2
+------------------------------------------------------------
+1. Descarga MSYS2 desde:
+   https://www.msys2.org/
+
+2. Instala MSYS2 en una ruta corta, por ejemplo:
+   C:\msys64
+
+3. Abre la terminal "MSYS2 MSYS" y ejecuta:
+   pacman -Syu
+
+4. Cierra la terminal y vuelve a abrirla.
+
+5. Ejecuta esta instalacion base para tener compilador, make y git:
+   pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake
+
+6. Una vez terminado, abre la terminal "MSYS2 MinGW 64-bit".
+
+------------------------------------------------------------
+PASO 2: Instalar dependencias de compilacion
+------------------------------------------------------------
+En la terminal MinGW 64-bit ejecuta:
+   pacman -S --needed mingw-w64-x86_64-asio
+
+Tambien puede ser necesario Boost para compatibilidad de Crow en algunos entornos:
+   pacman -S --needed mingw-w64-x86_64-boost
+
+------------------------------------------------------------
+PASO 3: Clonar el proyecto
+------------------------------------------------------------
+   git clone <URL-del-repositorio>
+   cd <carpeta-del-proyecto>
+
+------------------------------------------------------------
+PASO 4: Configurar el proyecto con CMake
+------------------------------------------------------------
+Desde la carpeta del proyecto, ejecuta:
+   cmake -S . -B build -G "MinGW Makefiles"
+
+Si quieres forzar el compilador MinGW manualmente:
+   cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/mingw64/bin/g++.exe
+
+------------------------------------------------------------
+PASO 5: Compilar el proyecto
+------------------------------------------------------------
+   cmake --build build
+
+Verificacion esperada:
+   [100%] Built target heartmed-backend
+
+Si el proceso falla por "Could NOT find asio" o por errores de include, entonces se debe volver a instalar:
+   pacman -S --needed mingw-w64-x86_64-asio
+
+------------------------------------------------------------
+PASO 6: Ejecutar la aplicacion
+------------------------------------------------------------
+La forma correcta en Windows es desde MSYS2 MinGW 64-bit:
+   cd /c/Users/<tu-usuario>/Documents/<carpeta-del-proyecto>
+   ./build/heartmed-backend.exe
+
+O si quieres ejecutarlo desde PowerShell normal, primero agrega la ruta de DLLs:
+   $env:PATH += ";C:\msys64\mingw64\bin;C:\msys64\usr\bin"
+   .\build\heartmed-backend.exe
+
+Si quieres ejecutar con puerto personalizado:
+   $env:PORT = "3000"
+   .\build\heartmed-backend.exe
+
+------------------------------------------------------------
+PASO 7: Probar la API en navegador
+------------------------------------------------------------
+Una vez levantado el servidor, prueba:
+- http://localhost:18080/health
+- http://localhost:18080/api/health
+
+------------------------------------------------------------
+NOTA IMPORTANTE
+------------------------------------------------------------
+Este proyecto usa Crow + Asio y requiere MSYS2 + MinGW para compilar bien en Windows.
+No funciona bien con un compilador no configurado de Windows sin esos runtimes y dependencias.
+
+------------------------------------------------------------
+RESUMEN RAPIDO
+------------------------------------------------------------
+1. Instalar MSYS2
+2. Ejecutar:
+   pacman -Syu
+   pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake mingw-w64-x86_64-asio
+3. Clonar proyecto
+4. Ejecutar:
+   cmake -S . -B build -G "MinGW Makefiles"
+   cmake --build build
+5. Levantar:
+   ./build/heartmed-backend.exe
+
+------------------------------------------------------------
+COMANDO FINAL PARA COMPARTIR
+------------------------------------------------------------
+pacman -Syu
+pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake mingw-w64-x86_64-asio
+cmake -S . -B build -G "MinGW Makefiles"
+cmake --build build
+./build/heartmed-backend.exe

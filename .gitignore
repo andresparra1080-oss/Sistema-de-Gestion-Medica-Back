@@ -1,0 +1,37 @@
+# Build directories
+build/
+cmake-build-debug/
+cmake-build-release/
+out/
+
+# Binary artifacts
+*.exe
+*.out
+*.app
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.dylib
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# Environment files
+.env
+.env.*
+*.local
+
+# Temporary and logs
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
