@@ -9,7 +9,7 @@ AuthRoutes::AuthRoutes(AuthService& authService)
     : authService_(authService) {
 }
 
-void AuthRoutes::registrarRutas(crow::SimpleApp& app) {
+void AuthRoutes::registrarRutas(crow::App<CorsMiddleware>& app) {
     CROW_ROUTE(app, "/login")
         .methods(crow::HTTPMethod::Post)([this](const crow::request& req) {
             try {
