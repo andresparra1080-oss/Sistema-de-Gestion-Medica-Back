@@ -1,17 +1,15 @@
 #include "crow.h"
+#include "crow/middlewares/cors.h"
 
-#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 #include <nlohmann/json.hpp>
 
 #include "Cross/Config.h"
-#include "Cross/CorsMiddleware.h"
 #include "Database/SQLite.h"
 #include "Routes/AuthRoutes.h"
 #include "Services/AuthService.h"
@@ -34,7 +32,13 @@ int main() {
         }
     }
 
-    crow::App<CorsMiddleware> aplicacion;
+    crow::App<crow::CORSHandler> aplicacion;
+    auto& cors = aplicacion.get_middleware<crow::CORSHandler>();
+    cors.global()
+        .origin("http://localhost:5173")
+        .methods("GET"_method, "POST"_method, "PUT"_method, "PATCH"_method, "DELETE"_method, "OPTIONS"_method)
+        .headers("Origin", "Content-Type", "Authorization", "Accept")
+        .max_age(86400);
 
     AuthService servicioAutenticacion;
     AuthRoutes rutasAutenticacion(servicioAutenticacion);
