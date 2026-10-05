@@ -4,9 +4,15 @@ REQUISITOS:
 - Windows 10 o 11
 - Git
 - MSYS2 instalado
-- CMake
 - MinGW 64-bit
+- CMake
 - Acceso a internet para descargar dependencias
+
+Este backend usa:
+- Crow (HTTP server)
+- SQLite3
+- OpenSSL (SHA-256 para hashes de contraseñas)
+- nlohmann/json
 
 ------------------------------------------------------------
 PASO 1: Instalar MSYS2
@@ -22,18 +28,18 @@ PASO 1: Instalar MSYS2
 
 4. Cierra la terminal y vuelve a abrirla.
 
-5. Ejecuta esta instalacion base para tener compilador, make y git:
+5. Ejecuta esta instalacion base:
    pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake
 
-6. Una vez terminado, abre la terminal "MSYS2 MinGW 64-bit".
+6. Abre la terminal "MSYS2 MinGW 64-bit" para compilar el proyecto.
 
 ------------------------------------------------------------
-PASO 2: Instalar dependencias de compilacion
+PASO 2: Instalar dependencias del proyecto
 ------------------------------------------------------------
 En la terminal MinGW 64-bit ejecuta:
-   pacman -S --needed mingw-w64-x86_64-asio
+   pacman -S --needed mingw-w64-x86_64-asio mingw-w64-x86_64-openssl mingw-w64-x86_64-sqlite3
 
-Tambien puede ser necesario Boost para compatibilidad de Crow en algunos entornos:
+Opcional dependiendo del entorno:
    pacman -S --needed mingw-w64-x86_64-boost
 
 ------------------------------------------------------------
@@ -43,72 +49,104 @@ PASO 3: Clonar el proyecto
    cd <carpeta-del-proyecto>
 
 ------------------------------------------------------------
-PASO 4: Configurar el proyecto con CMake
+PASO 4: Configurar con CMake
 ------------------------------------------------------------
-Desde la carpeta del proyecto, ejecuta:
+Desde la carpeta del proyecto ejecuta:
    cmake -S . -B build -G "MinGW Makefiles"
 
-Si quieres forzar el compilador MinGW manualmente:
+Si quieres forzar el compilador manualmente:
    cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/mingw64/bin/g++.exe
 
+INSTRUCCIONES PARA COMPILAR Y EJECUTAR HEARTMED BACKEND EN WINDOWS
+
 ------------------------------------------------------------
-PASO 5: Compilar el proyecto
+REQUISITOS
 ------------------------------------------------------------
-   cmake --build build
+- Instalar MSYS2
+- Abrir MSYS2 MinGW 64-bit
+- Instalar dependencias:
+  pacman -Syu
+  pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake mingw-w64-x86_64-asio mingw-w64-x86_64-openssl mingw-w64-x86_64-sqlite3
+
+------------------------------------------------------------
+PASO 1: IR A LA CARPETA DEL PROYECTO
+------------------------------------------------------------
+PowerShell:
+  cd "C:\Users\andre\Documents\HeartPirates\HeartMedBack"
+
+------------------------------------------------------------
+PASO 2: LIMPIAR CACHE ANTIGUA DE CMAKE
+------------------------------------------------------------
+PowerShell:
+  Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+
+------------------------------------------------------------
+PASO 3: CONFIGURAR EL PROYECTO CON MINGW
+------------------------------------------------------------
+PowerShell:
+  $env:Path = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;" + $env:Path
+  & "C:\Program Files\CMake\bin\cmake.exe" -S . -B build -G "MinGW Makefiles" -DOPENSSL_ROOT_DIR="C:/msys64/mingw64" -DCMAKE_MAKE_PROGRAM="C:/msys64/mingw64/bin/mingw32-make.exe" -DCMAKE_CXX_COMPILER="C:/msys64/mingw64/bin/g++.exe"
+
+------------------------------------------------------------
+PASO 4: COMPILAR
+------------------------------------------------------------
+PowerShell:
+  & "C:\Program Files\CMake\bin\cmake.exe" --build build --config Release
 
 Verificacion esperada:
-   [100%] Built target heartmed-backend
-
-Si el proceso falla por "Could NOT find asio" o por errores de include, entonces se debe volver a instalar:
-   pacman -S --needed mingw-w64-x86_64-asio
+  [100%] Built target heartmed-backend
 
 ------------------------------------------------------------
-PASO 6: Ejecutar la aplicacion
+PASO 5: EJECUTAR LA API
 ------------------------------------------------------------
-La forma correcta en Windows es desde MSYS2 MinGW 64-bit:
-   cd /c/Users/<tu-usuario>/Documents/<carpeta-del-proyecto>
-   ./build/heartmed-backend.exe
+PowerShell:
+  $env:Path = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;" + $env:Path
+  .\build\heartmed-backend.exe
 
-O si quieres ejecutarlo desde PowerShell normal, primero agrega la ruta de DLLs:
-   $env:PATH += ";C:\msys64\mingw64\bin;C:\msys64\usr\bin"
-   .\build\heartmed-backend.exe
-
-Si quieres ejecutar con puerto personalizado:
-   $env:PORT = "3000"
-   .\build\heartmed-backend.exe
+Si quieres usar un puerto distinto:
+  $env:PORT = "3000"
+  .\build\heartmed-backend.exe
 
 ------------------------------------------------------------
-PASO 7: Probar la API en navegador
+PASO 6: COMPROBAR SI SIGUE FUNCIONANDO
 ------------------------------------------------------------
-Una vez levantado el servidor, prueba:
-- http://localhost:18080/health
-- http://localhost:18080/api/health
+PowerShell:
+  Invoke-WebRequest http://localhost:18080/health
+
+Si falla, la API ya no está levantada o se cerró.
+Tambien puedes probar:
+  Invoke-WebRequest http://localhost:18080/api/health
 
 ------------------------------------------------------------
-NOTA IMPORTANTE
+PASO 7: PROBAR LOGIN
 ------------------------------------------------------------
-Este proyecto usa Crow + Asio y requiere MSYS2 + MinGW para compilar bien en Windows.
-No funciona bien con un compilador no configurado de Windows sin esos runtimes y dependencias.
+Endpoint:
+  POST http://localhost:18080/login
+
+JSON:
+  {
+    "email": "law@heartpirates.com",
+    "password": "Prueba123*"
+  }
+
+PowerShell:
+  Invoke-RestMethod -Uri "http://localhost:18080/login" -Method Post -ContentType "application/json" -Body '{"email":"law@heartpirates.com","password":"Prueba123*"}'
 
 ------------------------------------------------------------
-RESUMEN RAPIDO
+IMPORTANTE
 ------------------------------------------------------------
-1. Instalar MSYS2
-2. Ejecutar:
-   pacman -Syu
-   pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake mingw-w64-x86_64-asio
-3. Clonar proyecto
-4. Ejecutar:
-   cmake -S . -B build -G "MinGW Makefiles"
-   cmake --build build
-5. Levantar:
-   ./build/heartmed-backend.exe
+- Si la API no responde en http://localhost:18080/health, entonces no está funcionando.
+- Si CMake falla por OpenSSL, usa -DOPENSSL_ROOT_DIR="C:/msys64/mingw64".
+- La ruta de la carpeta debe mantener el mismo nombre: HeartMedBack.
+- El ejecutable se genera en:
+  .\build\heartmed-backend.exe
 
 ------------------------------------------------------------
-COMANDO FINAL PARA COMPARTIR
+COMANDO FINAL
 ------------------------------------------------------------
-pacman -Syu
-pacman -S --needed base-devel mingw-w64-x86_64-toolchain git cmake mingw-w64-x86_64-asio
-cmake -S . -B build -G "MinGW Makefiles"
-cmake --build build
-./build/heartmed-backend.exe
+$env:Path = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;" + $env:Path
+cd "C:\Users\andre\Documents\HeartPirates\HeartMedBack"
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+& "C:\Program Files\CMake\bin\cmake.exe" -S . -B build -G "MinGW Makefiles" -DOPENSSL_ROOT_DIR="C:/msys64/mingw64" -DCMAKE_MAKE_PROGRAM="C:/msys64/mingw64/bin/mingw32-make.exe" -DCMAKE_CXX_COMPILER="C:/msys64/mingw64/bin/g++.exe"
+& "C:\Program Files\CMake\bin\cmake.exe" --build build --config Release
+.\build\heartmed-backend.exe

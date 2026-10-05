@@ -1,0 +1,57 @@
+====================================================================
+HEARTMED - USUARIOS Y CONTRASEÑAS DE PRUEBA
+====================================================================
+
+[1] Capitán / Médico Principal
+    Usuario: Trafalgar D. Water Law
+    Correo:  law@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     1 (Capitán/Médico Principal)
+    Estado:  Activo
+
+[2] Cirujano Naval
+    Usuario: Ikkaku
+    Correo:  ikkaku@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     2 (Cirujano Naval)
+    Estado:  Activo
+
+[3] Administrador de Inventario
+    Usuario: Shachi
+    Correo:  shachi@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     3 (Administrador de Inventario)
+    Estado:  Activo
+
+[4] Analista de Datos
+    Usuario: Penguin
+    Correo:  penguin@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     4 (Analista de Datos)
+    Estado:  Activo
+
+[5] Tripulante 1
+    Usuario: Bepo
+    Correo:  bepo@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     5 (Tripulante)
+    Estado:  Activo
+
+[6] Tripulante 2
+    Usuario: Jean Bart
+    Correo:  jeanbart@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     5 (Tripulante)
+    Estado:  Activo
+
+[7] Tripulante 3 (Inactivo)
+    Usuario: Uni
+    Correo:  uni@heartpirates.com
+    Clave:   Prueba123*
+    Rol:     5 (Tripulante)
+    Estado:  Inactivo (activo = 0)
+
+====================================================================
+NOTA: Todas las cuentas comparten la misma contraseña por defecto:
+Prueba123*
+====================================================================
