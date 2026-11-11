@@ -17,13 +17,16 @@
 #include "Routes/InventarioRoutes.h"
 #include "Routes/MovimientoRoutes.h"
 #include "Routes/PacienteRoutes.h"
+#include "Routes/TratamientoRoutes.h"
 #include "Services/AuthService.h"
 #include "Services/HistoriaService.h"
 #include "Services/InventarioService.h"
 #include "Services/MovimientoService.h"
 #include "Services/PacienteService.h"
+#include "Services/TratamientoService.h"
 
-int main() {
+int main()
+{
     const std::filesystem::path rutaArchivoEnv = ".env";
     Configuracion::instancia().cargarDesdeArchivo(rutaArchivoEnv.string());
 
@@ -34,19 +37,23 @@ int main() {
         Configuracion::instancia().obtenerCadena("DB_PATH", "./Database/heartmed_db.sqlite3");
     BaseDatosSqlite::instancia().abrir(rutaBaseDatos);
 
-    const char* puertoEntorno = std::getenv("PORT");
+    const char *puertoEntorno = std::getenv("PORT");
     int puerto = Configuracion::instancia().obtenerEntero("PORT", 18080);
 
-    if (puertoEntorno != nullptr && puertoEntorno[0] != '\0') {
-        try {
+    if (puertoEntorno != nullptr && puertoEntorno[0] != '\0')
+    {
+        try
+        {
             puerto = std::stoi(puertoEntorno);
-        } catch (const std::exception&) {
+        }
+        catch (const std::exception &)
+        {
             std::cerr << "La variable PORT no es válida. Se usará el puerto " << puerto << std::endl;
         }
     }
 
     crow::App<crow::CORSHandler> aplicacion;
-    auto& cors = aplicacion.get_middleware<crow::CORSHandler>();
+    auto &cors = aplicacion.get_middleware<crow::CORSHandler>();
     cors.global()
         .origin("http://localhost:5173")
         .methods("GET"_method, "POST"_method, "PUT"_method, "PATCH"_method, "DELETE"_method, "OPTIONS"_method)
@@ -73,25 +80,21 @@ int main() {
     HistoriaRoutes rutasHistorias(servicioHistorias);
     rutasHistorias.registrarRutas(aplicacion);
 
-    CROW_ROUTE(aplicacion, "/health")([]() {
-        nlohmann::json respuesta;
-        respuesta["status"] = "ok";
-        respuesta["service"] = "heartmed-backend";
-        return ApiHttp::respuestaJson(200, respuesta.dump());
-    });
+    TratamientoService servicioTratamientos;
+    TratamientoRoutes rutasTratamientos(servicioTratamientos);
+    rutasTratamientos.registrarRutas(aplicacion);
 
-    CROW_ROUTE(aplicacion, "/api/health")([]() {
-        nlohmann::json respuesta;
-        respuesta["status"] = "ok";
-        respuesta["message"] = "Backend de HeartMed funcionando";
-        respuesta["database"] = Configuracion::instancia().obtenerCadena("DB_NAME", "heartmed_db");
-        return ApiHttp::respuestaJson(200, respuesta.dump());
-    });
+    CROW_ROUTE(aplicacion, "/health")([]()
+                                      {
+    nlohmann::json respuesta;
+    respuesta["status"] = "ok";
+    respuesta["service"] = "heartmed-backend";
+    return ApiHttp::respuestaJson(200, respuesta.dump()); });
 
-    std::cout << "Configuración cargada desde .env" << std::endl;
-    std::cout << "Base de datos: " << rutaBaseDatos << std::endl;
-    std::cout << "Iniciando servidor Crow en puerto " << puerto << std::endl;
-    aplicacion.port(puerto).multithreaded().run();
-
-    return 0;
-}
+    CROW_ROUTE(aplicacion, "/api/health")([]()
+                                          {
+    nlohmann::json respuesta;
+    respuesta["status"] = "ok";
+    respuesta["message"] = "Backend de HeartMed funcionando";
+    respuesta["database"] = Configuracion::instancia().obtenerCadena("DB_NAME", "heartmed_db");
+    return ApiHttp::respuestaJson(200, respuesta.dump()); });
