@@ -58,6 +58,10 @@
 --   REV #19 tipo_insumo solo acepta MEDICAMENTO o INSUMO.
 --   REV #20 movimientos_inventario es de solo lectura, nuevo tipo BAJA y
 --           motivo obligatorio en salidas que no vienen de un tratamiento.
+--   REV #21 Módulo 4 (POST /api/emergencias): alertas admite el tipo EMERGENCIA
+--           (con id_emergencia) y eventos_medicos.id_emergencia enlaza el
+--           evento del historial con la emergencia. Para una base ya creada
+--           ver migracion_emergencias.sql.
 --
 -- IMPORTANTE PARA EL BACKEND:
 --   1. Ejecutar PRAGMA foreign_keys = ON; en CADA conexión (SQLite trae las
@@ -361,6 +365,8 @@ CREATE TABLE eventos_medicos (
     motivo                  TEXT     NOT NULL,
     diagnostico             TEXT     NOT NULL,
     fecha_evento            DATETIME NOT NULL,
+    -- REV #21: emergencia que originó el evento (NULL si no vino de una).
+    id_emergencia           INTEGER  NULL,
 
     CONSTRAINT chk_eventos_medicos_motivo_texto CHECK (trim(motivo) <> ''),
     CONSTRAINT chk_eventos_medicos_diagnostico_texto CHECK (trim(diagnostico) <> ''),
@@ -371,6 +377,9 @@ CREATE TABLE eventos_medicos (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_eventos_medicos_usuarios
         FOREIGN KEY (id_usuario_registra) REFERENCES usuarios (id_usuario)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_eventos_medicos_emergencias                           -- REV #21
+        FOREIGN KEY (id_emergencia) REFERENCES emergencias (id_emergencia)
         ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -656,19 +665,21 @@ CREATE TABLE movimientos_inventario (
 );
 
 -- alertas: avisos automáticos del sistema.
--- Cada tipo usa UNA sola referencia y las otras dos quedan en NULL:
+-- Cada tipo usa UNA sola referencia y las otras quedan en NULL:
 --   STOCK_BAJO          -> id_medicamento
 --   VENCIMIENTO_PROXIMO -> id_lote
 --   DOSIS_PENDIENTE     -> id_tratamiento
+--   EMERGENCIA          -> id_emergencia   (REV #21)
 -- notificada = ya se avisó al responsable; resuelta = la alerta se cerró (RF-48).
 CREATE TABLE alertas (
     id_alerta         INTEGER PRIMARY KEY AUTOINCREMENT,
     id_medicamento    INTEGER      NULL,
     id_lote           INTEGER      NULL,
     id_tratamiento    INTEGER      NULL,
+    id_emergencia     INTEGER      NULL,                                -- REV #21
     tipo_alerta       TEXT         NOT NULL
         CONSTRAINT chk_alertas_tipo_alerta
-        CHECK (tipo_alerta IN ('STOCK_BAJO', 'VENCIMIENTO_PROXIMO', 'DOSIS_PENDIENTE')),
+        CHECK (tipo_alerta IN ('STOCK_BAJO', 'VENCIMIENTO_PROXIMO', 'DOSIS_PENDIENTE', 'EMERGENCIA')),
     mensaje           VARCHAR(300) NOT NULL,
     -- Mismo dominio que emergencias.nivel_urgencia.
     prioridad         TEXT         NOT NULL
@@ -681,13 +692,19 @@ CREATE TABLE alertas (
     fecha_generacion  DATETIME     NOT NULL DEFAULT (datetime('now', '-5 hours')),   -- REV #9
     fecha_resolucion  DATETIME     NULL,
     CONSTRAINT chk_alertas_mensaje_texto CHECK (trim(mensaje) <> '' AND length(mensaje) <= 300),
-    CONSTRAINT chk_alertas_referencia                                   -- CAMBIO #2
+    CONSTRAINT chk_alertas_referencia                                   -- CAMBIO #2, REV #21
         CHECK ((tipo_alerta = 'STOCK_BAJO'
-                    AND id_medicamento IS NOT NULL AND id_lote IS NULL AND id_tratamiento IS NULL)
+                    AND id_medicamento IS NOT NULL AND id_lote IS NULL
+                    AND id_tratamiento IS NULL AND id_emergencia IS NULL)
             OR (tipo_alerta = 'VENCIMIENTO_PROXIMO'
-                    AND id_lote IS NOT NULL AND id_medicamento IS NULL AND id_tratamiento IS NULL)
+                    AND id_lote IS NOT NULL AND id_medicamento IS NULL
+                    AND id_tratamiento IS NULL AND id_emergencia IS NULL)
             OR (tipo_alerta = 'DOSIS_PENDIENTE'
-                    AND id_tratamiento IS NOT NULL AND id_medicamento IS NULL AND id_lote IS NULL)),
+                    AND id_tratamiento IS NOT NULL AND id_medicamento IS NULL
+                    AND id_lote IS NULL AND id_emergencia IS NULL)
+            OR (tipo_alerta = 'EMERGENCIA'
+                    AND id_emergencia IS NOT NULL AND id_medicamento IS NULL
+                    AND id_lote IS NULL AND id_tratamiento IS NULL)),
     CONSTRAINT chk_alertas_resuelta_fecha                               -- CAMBIO #13
         CHECK ((resuelta = 1 AND fecha_resolucion IS NOT NULL)
             OR (resuelta = 0 AND fecha_resolucion IS NULL)),
@@ -705,6 +722,9 @@ CREATE TABLE alertas (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_alertas_tratamientos
         FOREIGN KEY (id_tratamiento) REFERENCES tratamientos (id_tratamiento)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_alertas_emergencias                                   -- REV #21
+        FOREIGN KEY (id_emergencia) REFERENCES emergencias (id_emergencia)
         ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -742,6 +762,8 @@ CREATE INDEX idx_movimientos_inventario_id_tratamiento   ON movimientos_inventar
 CREATE INDEX idx_alertas_id_medicamento                  ON alertas (id_medicamento);
 CREATE INDEX idx_alertas_id_lote                         ON alertas (id_lote);
 CREATE INDEX idx_alertas_id_tratamiento                  ON alertas (id_tratamiento);
+CREATE INDEX idx_alertas_id_emergencia                   ON alertas (id_emergencia);              -- REV #21
+CREATE INDEX idx_eventos_medicos_id_emergencia           ON eventos_medicos (id_emergencia);      -- REV #21
 
 -- CAMBIO #14: no puede haber dos alertas ABIERTAS de stock bajo para el
 -- mismo medicamento, ni de vencimiento para el mismo lote.
@@ -751,6 +773,10 @@ CREATE UNIQUE INDEX uk_alertas_stock_bajo_abierta
 CREATE UNIQUE INDEX uk_alertas_vencimiento_abierta
     ON alertas (id_lote)
     WHERE tipo_alerta = 'VENCIMIENTO_PROXIMO' AND resuelta = 0;
+-- REV #21: una emergencia genera una sola alerta de tipo EMERGENCIA.
+CREATE UNIQUE INDEX uk_alertas_emergencia
+    ON alertas (id_emergencia)
+    WHERE tipo_alerta = 'EMERGENCIA';
 
 
 -- #####################################################################
