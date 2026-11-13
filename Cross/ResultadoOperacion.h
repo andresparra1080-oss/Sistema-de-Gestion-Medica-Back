@@ -8,5 +8,7 @@ enum class ResultadoOperacion {
     Duplicado,
     // Operación válida pero no permitida por el estado actual de los datos.
     Conflicto,
+    // El usuario está autenticado pero su rol no permite la operación.
+    SinPermiso,
     ErrorInterno,
 };
