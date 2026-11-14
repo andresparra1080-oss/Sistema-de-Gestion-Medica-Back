@@ -35,3 +35,6 @@ out/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Dependencias externas descargadas por CMake
+build-msvc-vcpkg/_deps/
