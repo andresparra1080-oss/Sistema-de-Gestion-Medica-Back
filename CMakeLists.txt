@@ -33,69 +33,30 @@ if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
+set(HEARTMED_SOURCE_DIRS
+    ${CMAKE_SOURCE_DIR}/entry
+    ${CMAKE_SOURCE_DIR}/Cross
+    ${CMAKE_SOURCE_DIR}/Database
+    ${CMAKE_SOURCE_DIR}/Models
+    ${CMAKE_SOURCE_DIR}/Repositories
+    ${CMAKE_SOURCE_DIR}/Routes
+    ${CMAKE_SOURCE_DIR}/Services
+)
+
+set(HEARTMED_CPP_SOURCES)
+foreach(dir IN LISTS HEARTMED_SOURCE_DIRS)
+    file(GLOB dir_sources CONFIGURE_DEPENDS "${dir}/*.cpp")
+    list(APPEND HEARTMED_CPP_SOURCES ${dir_sources})
+endforeach()
+
+if(HEARTMED_CPP_SOURCES STREQUAL "")
+    message(FATAL_ERROR "No se encontró ningún archivo .cpp en los módulos del proyecto. Revisa la estructura del repositorio.")
+endif()
+
+list(SORT HEARTMED_CPP_SOURCES)
+
 add_executable(heartmed-backend
-    entry/main.cpp
-    Models/Usuarios.cpp
-    Models/Paciente.cpp
-    Models/Lote.cpp
-    Models/Medicamento.cpp
-    Models/MovimientoInventario.cpp
-    Models/Alergia.cpp
-    Models/HistoriaClinica.cpp
-    Models/Tratamiento.cpp
-    Repositories/UsuarioRepository.cpp
-    Repositories/PacienteRepository.cpp
-    Repositories/InventarioRepository.cpp
-    Repositories/MovimientoRepository.cpp
-    Repositories/HistoriaRepository.cpp
-    Repositories/TratamientoRepository.cpp
-    Services/AuthService.cpp
-    Services/PacienteService.cpp
-    Services/InventarioService.cpp
-    Services/MovimientoService.cpp
-    Services/HistoriaService.cpp
-    Services/TratamientoService.cpp
-    Routes/AuthRoutes.cpp
-    Routes/PacienteRoutes.cpp
-    Routes/InventarioRoutes.cpp
-    Routes/MovimientoRoutes.cpp
-    Routes/HistoriaRoutes.cpp
-    Routes/TratamientoRoutes.cpp
-    Database/SQLite.cpp
-    Cross/Config.cpp
-    Cross/PasswordHash.cpp
-    Cross/JwtToken.cpp
-    Cross/ApiHttp.cpp
-    Models/Paciente.h
-    Models/Lote.h
-    Models/Medicamento.h
-    Models/MovimientoInventario.h
-    Models/Alergia.h
-    Models/HistoriaClinica.h
-    Models/Tratamiento.h
-    Repositories/UsuarioRepository.h
-    Repositories/PacienteRepository.h
-    Repositories/InventarioRepository.h
-    Repositories/MovimientoRepository.h
-    Repositories/HistoriaRepository.h
-    Repositories/TratamientoRepository.h
-    Routes/AuthRoutes.h
-    Routes/PacienteRoutes.h
-    Routes/InventarioRoutes.h
-    Routes/MovimientoRoutes.h
-    Routes/HistoriaRoutes.h
-    Routes/TratamientoRoutes.h
-    Services/PacienteService.h
-    Services/InventarioService.h
-    Services/MovimientoService.h
-    Services/HistoriaService.h
-    Services/TratamientoService.h
-    Database/SQLite.h
-    Cross/Config.h
-    Cross/PasswordHash.h
-    Cross/JwtToken.h
-    Cross/ApiHttp.h
-    Cross/ResultadoOperacion.h
+    ${HEARTMED_CPP_SOURCES}
 )
 
 target_include_directories(heartmed-backend
