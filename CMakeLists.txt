@@ -96,6 +96,13 @@ add_executable(heartmed-backend
     Cross/JwtToken.h
     Cross/ApiHttp.h
     Cross/ResultadoOperacion.h
+    Repositories/AlertaRepository.cpp
+    Services/AlertaService.cpp
+    Routes/AlertaRoutes.cpp
+    Models/Alerta.h
+    Repositories/AlertaRepository.h
+    Services/AlertaService.h
+    Routes/AlertaRoutes.h
 )
 
 target_include_directories(heartmed-backend

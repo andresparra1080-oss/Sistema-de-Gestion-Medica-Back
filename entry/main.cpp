@@ -12,18 +12,21 @@
 #include "Cross/ApiHttp.h"
 #include "Cross/Config.h"
 #include "Database/SQLite.h"
+#include "Routes/AlertaRoutes.h"
 #include "Routes/AuthRoutes.h"
 #include "Routes/HistoriaRoutes.h"
 #include "Routes/InventarioRoutes.h"
 #include "Routes/MovimientoRoutes.h"
 #include "Routes/PacienteRoutes.h"
 #include "Routes/TratamientoRoutes.h"
+#include "Services/AlertaService.h"
 #include "Services/AuthService.h"
 #include "Services/HistoriaService.h"
 #include "Services/InventarioService.h"
 #include "Services/MovimientoService.h"
 #include "Services/PacienteService.h"
 #include "Services/TratamientoService.h"
+
 
 int main()
 {
@@ -82,6 +85,10 @@ int main()
     TratamientoRoutes rutasTratamientos(servicioTratamientos);
     rutasTratamientos.registrarRutas(aplicacion);
 
+    AlertaService servicioAlertas;
+    AlertaRoutes rutasAlertas(servicioAlertas);
+    rutasAlertas.registrarRutas(aplicacion);
+
     CROW_ROUTE(aplicacion, "/health")([]()
                                       {
     nlohmann::json respuesta;
@@ -96,3 +103,7 @@ int main()
     respuesta["message"] = "Backend de HeartMed funcionando";
     respuesta["database"] = Configuracion::instancia().obtenerCadena("DB_NAME", "heartmed_db");
     return ApiHttp::respuestaJson(200, respuesta.dump()); });
+
+    aplicacion.port(puerto).multithreaded().run();
+    return 0;
+}
