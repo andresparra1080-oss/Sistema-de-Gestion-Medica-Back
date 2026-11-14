@@ -58,4 +58,10 @@ public:
                                  long long idUsuario,
                                  Emergencia& actualizada,
                                  std::string& error) const;
+
+    // Elimina una emergencia ya cerrada, además de su alerta asociada. Las
+    // relaciones con pacientes y acciones se borran por CASCADE.
+    ResultadoOperacion eliminar(long long idEmergencia,
+                                long long idUsuario,
+                                std::string& error) const;
 };

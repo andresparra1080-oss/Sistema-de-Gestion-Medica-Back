@@ -658,3 +658,71 @@ ResultadoOperacion EmergenciaRepository::finalizar(long long idEmergencia,
                         "WHERE id_emergencia = ? AND estado IN ('ACTIVA', 'EN_ATENCION');",
                         "Solo una emergencia ACTIVA o EN_ATENCION puede finalizarse", actualizada, error);
 }
+
+ResultadoOperacion EmergenciaRepository::eliminar(long long idEmergencia,
+                                                  long long idUsuario,
+                                                  std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    std::lock_guard<std::mutex> candado(mutexEscrituras);
+    if (!ejecutar(conexion, "BEGIN IMMEDIATE;")) {
+        error = sqlite3_errmsg(conexion);
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    auto fallar = [&](ResultadoOperacion resultado) {
+        ejecutar(conexion, "ROLLBACK;");
+        return resultado;
+    };
+
+    Emergencia emergencia;
+    const ResultadoOperacion lectura = leerEmergencia(conexion, idEmergencia, emergencia, error);
+    if (lectura != ResultadoOperacion::Exito) {
+        return fallar(lectura);
+    }
+
+    if (emergencia.estado != "FINALIZADA") {
+        error = "Solo puede eliminarse una emergencia FINALIZADA";
+        return fallar(ResultadoOperacion::Conflicto);
+    }
+
+    sqlite3_stmt* sentencia = nullptr;
+    if (!preparar(conexion, "DELETE FROM alertas WHERE id_emergencia = ?;", &sentencia, error)) {
+        return fallar(ResultadoOperacion::ErrorInterno);
+    }
+    sqlite3_bind_int64(sentencia, 1, idEmergencia);
+    if (!terminar(conexion, sentencia, error)) {
+        return fallar(ResultadoOperacion::ErrorInterno);
+    }
+
+    if (!preparar(conexion, "DELETE FROM emergencias WHERE id_emergencia = ?;", &sentencia, error)) {
+        return fallar(ResultadoOperacion::ErrorInterno);
+    }
+    sqlite3_bind_int64(sentencia, 1, idEmergencia);
+    if (!terminar(conexion, sentencia, error)) {
+        return fallar(ResultadoOperacion::ErrorInterno);
+    }
+
+    if (sqlite3_changes(conexion) == 0) {
+        error = "No se encontró la emergencia para eliminar";
+        return fallar(ResultadoOperacion::NoEncontrado);
+    }
+
+    if (!registrarAuditoria(conexion, idUsuario, "DELETE", "emergencias", idEmergencia,
+                            "Eliminó la emergencia cerrada " + std::to_string(idEmergencia) + ".",
+                            error)) {
+        return fallar(ResultadoOperacion::ErrorInterno);
+    }
+
+    if (!ejecutar(conexion, "COMMIT;")) {
+        error = sqlite3_errmsg(conexion);
+        return fallar(ResultadoOperacion::ErrorInterno);
+    }
+
+    error.clear();
+    return ResultadoOperacion::Exito;
+}

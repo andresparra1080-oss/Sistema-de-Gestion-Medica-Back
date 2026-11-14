@@ -1,5 +1,6 @@
 #include "Services/InventarioService.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -11,6 +12,136 @@ ResumenInventario::ResumenInventario()
       bajoMinimo(0),
       porcentajeDisponibilidad(0),
       hayDatos(false) {
+}
+
+namespace {
+
+std::string limpiarTexto(const std::string& valor) {
+    std::string resultado = valor;
+    const auto inicio = resultado.find_first_not_of(" \t\r\n");
+    if (inicio == std::string::npos) {
+        return "";
+    }
+    const auto fin = resultado.find_last_not_of(" \t\r\n");
+    return resultado.substr(inicio, fin - inicio + 1);
+}
+
+bool esTipoInsumoValido(const std::string& valor) {
+    return valor == "MEDICAMENTO" || valor == "INSUMO";
+}
+
+bool esUnidadMedidaValida(const std::string& valor) {
+    static const std::vector<std::string> permitidas = {
+        "UNIDAD", "TABLETA", "CAPSULA", "AMPOLLA", "FRASCO", "TUBO", "ROLLO", "ML"};
+    return std::find(permitidas.begin(), permitidas.end(), valor) != permitidas.end();
+}
+
+ResultadoOperacion prepararMedicamento(const Medicamento& datos,
+                                        Medicamento& limpio,
+                                        std::string& mensaje) {
+    const std::string nombre = limpiarTexto(datos.getNombre());
+    const std::string tipo = limpiarTexto(datos.getTipoInsumo());
+    const std::string unidad = limpiarTexto(datos.getUnidadMedida());
+    const std::string descripcion = limpiarTexto(datos.getDescripcion());
+    const long long umbralMinimo = datos.getUmbralMinimo();
+
+    if (nombre.empty() || nombre.size() > 100) {
+        mensaje = "El nombre del medicamento es obligatorio y admite máximo 100 caracteres";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    if (!esTipoInsumoValido(tipo)) {
+        mensaje = "El tipo de insumo debe ser MEDICAMENTO o INSUMO";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    if (!esUnidadMedidaValida(unidad)) {
+        mensaje = "La unidad de medida no es válida";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    if (descripcion.size() > 500) {
+        mensaje = "La descripción admite máximo 500 caracteres";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    if (umbralMinimo < 0) {
+        mensaje = "El umbral mínimo no puede ser negativo";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    limpio = datos;
+    limpio.setNombre(nombre);
+    limpio.setTipoInsumo(tipo);
+    limpio.setUnidadMedida(unidad);
+    limpio.setDescripcion(descripcion);
+    limpio.setCantidadTotalDisponible(0);
+    limpio.setUmbralMinimo(umbralMinimo);
+    mensaje.clear();
+    return ResultadoOperacion::Exito;
+}
+
+}  // namespace
+
+ResultadoOperacion InventarioService::crear(const Medicamento& datos,
+                                            Medicamento& creado,
+                                            std::string& mensaje) const {
+    Medicamento limpio;
+    const ResultadoOperacion validacion = prepararMedicamento(datos, limpio, mensaje);
+    if (validacion != ResultadoOperacion::Exito) {
+        return validacion;
+    }
+
+    InventarioRepository repository;
+    long long idGenerado = 0;
+    std::string error;
+    if (!repository.crear(limpio, idGenerado, error)) {
+        if (error.find("UNIQUE") != std::string::npos) {
+            mensaje = "Ya existe un medicamento con ese nombre";
+            return ResultadoOperacion::Duplicado;
+        }
+        mensaje = error.empty() ? "No se pudo registrar el medicamento" : error;
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    limpio.setIdMedicamento(idGenerado);
+    creado = limpio;
+    mensaje = "Medicamento registrado";
+    return ResultadoOperacion::Exito;
+}
+
+ResultadoOperacion InventarioService::actualizar(long long idMedicamento,
+                                                const Medicamento& datos,
+                                                std::string& mensaje) const {
+    if (idMedicamento <= 0) {
+        mensaje = "El identificador del medicamento no es válido";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    Medicamento limpio;
+    const ResultadoOperacion validacion = prepararMedicamento(datos, limpio, mensaje);
+    if (validacion != ResultadoOperacion::Exito) {
+        return validacion;
+    }
+
+    InventarioRepository repository;
+    if (!repository.existeId(idMedicamento)) {
+        mensaje = "No existe el medicamento indicado";
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    std::string error;
+    if (!repository.actualizar(idMedicamento, limpio, error)) {
+        if (error.find("UNIQUE") != std::string::npos) {
+            mensaje = "Ya existe un medicamento con ese nombre";
+            return ResultadoOperacion::Duplicado;
+        }
+        mensaje = error.empty() ? "No se pudo actualizar el medicamento" : error;
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    mensaje = "Medicamento actualizado";
+    return ResultadoOperacion::Exito;
 }
 
 ResultadoOperacion InventarioService::listar(std::vector<Medicamento>& medicamentos,

@@ -350,5 +350,27 @@ void EmergenciaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             cuerpo["emergencia"] = aJson(actualizada);
             return ApiHttp::respuestaJson(200, cuerpo.dump());
         });
+
+    CROW_ROUTE(app, "/api/emergencias/<int>")
+        .methods(crow::HTTPMethod::Delete)([this](const crow::request& peticion, int idEmergencia) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            std::string mensaje;
+            const ResultadoOperacion resultado =
+                emergenciaService_.eliminar(idEmergencia, correo, mensaje);
+
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["message"] = mensaje;
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
 }
                 

@@ -48,4 +48,9 @@ public:
                                  const std::string& correoUsuario,
                                  Emergencia& actualizada,
                                  std::string& mensaje) const;
+
+    // Elimina una emergencia cerrada bajo permiso de gestión.
+    ResultadoOperacion eliminar(long long idEmergencia,
+                                 const std::string& correoUsuario,
+                                 std::string& mensaje) const;
 };

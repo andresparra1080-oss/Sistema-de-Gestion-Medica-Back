@@ -95,6 +95,82 @@ void InventarioRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             return ApiHttp::respuestaJson(200, cuerpo.dump());
         });
 
+    CROW_ROUTE(app, "/api/inventario")
+        .methods(crow::HTTPMethod::Post)([this](const crow::request& peticion) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            Medicamento datos;
+            nlohmann::json cuerpoPeticion;
+            try {
+                cuerpoPeticion = nlohmann::json::parse(peticion.body);
+                if (!cuerpoPeticion.is_object()) {
+                    return ApiHttp::respuestaError(400, "Se esperaba un objeto JSON");
+                }
+
+                datos.setNombre(cuerpoPeticion.value("nombre", ""));
+                datos.setTipoInsumo(cuerpoPeticion.value("tipo_insumo", ""));
+                datos.setUnidadMedida(cuerpoPeticion.value("unidad_medida", "UNIDAD"));
+                datos.setDescripcion(cuerpoPeticion.value("descripcion", ""));
+                datos.setUmbralMinimo(cuerpoPeticion.value("umbral_minimo", 0LL));
+            } catch (const std::exception&) {
+                return ApiHttp::respuestaError(400, "JSON inválido o campos con tipos incorrectos");
+            }
+
+            Medicamento creado;
+            std::string mensaje;
+            const ResultadoOperacion resultado = inventarioService_.crear(datos, creado, mensaje);
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["message"] = mensaje;
+            cuerpo["medicamento"] = aJson(creado);
+            return ApiHttp::respuestaJson(201, cuerpo.dump());
+        });
+
+    CROW_ROUTE(app, "/api/inventario/<int>")
+        .methods(crow::HTTPMethod::Put)([this](const crow::request& peticion, int idMedicamento) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            Medicamento datos;
+            nlohmann::json cuerpoPeticion;
+            try {
+                cuerpoPeticion = nlohmann::json::parse(peticion.body);
+                if (!cuerpoPeticion.is_object()) {
+                    return ApiHttp::respuestaError(400, "Se esperaba un objeto JSON");
+                }
+
+                datos.setNombre(cuerpoPeticion.value("nombre", ""));
+                datos.setTipoInsumo(cuerpoPeticion.value("tipo_insumo", ""));
+                datos.setUnidadMedida(cuerpoPeticion.value("unidad_medida", "UNIDAD"));
+                datos.setDescripcion(cuerpoPeticion.value("descripcion", ""));
+                datos.setUmbralMinimo(cuerpoPeticion.value("umbral_minimo", 0LL));
+            } catch (const std::exception&) {
+                return ApiHttp::respuestaError(400, "JSON inválido o campos con tipos incorrectos");
+            }
+
+            std::string mensaje;
+            const ResultadoOperacion resultado = inventarioService_.actualizar(idMedicamento, datos, mensaje);
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["message"] = mensaje;
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
+
     CROW_ROUTE(app, "/api/inventario/<int>")
         .methods(crow::HTTPMethod::Delete)([this](const crow::request& peticion, int idMedicamento) {
             std::string correo;

@@ -38,6 +38,103 @@ bool InventarioRepository::existeId(long long idMedicamento) const {
     return resultado == SQLITE_ROW;
 }
 
+bool InventarioRepository::crear(const Medicamento& datos,
+                                long long& idGenerado,
+                                std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return false;
+    }
+
+    sqlite3_stmt* sentencia = nullptr;
+    const std::string sql =
+        "INSERT INTO medicamentos (nombre, tipo_insumo, unidad_medida, descripcion, umbral_minimo) "
+        "VALUES (?, ?, ?, ?, ?);";
+    if (sqlite3_prepare_v2(conexion, sql.c_str(), -1, &sentencia, nullptr) != SQLITE_OK) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    const std::string nombre = datos.getNombre();
+    const std::string tipo = datos.getTipoInsumo();
+    const std::string unidad = datos.getUnidadMedida();
+    const std::string descripcion = datos.getDescripcion();
+
+    sqlite3_bind_text(sentencia, 1, nombre.c_str(), static_cast<int>(nombre.size()), SQLITE_TRANSIENT);
+    sqlite3_bind_text(sentencia, 2, tipo.c_str(), static_cast<int>(tipo.size()), SQLITE_TRANSIENT);
+    sqlite3_bind_text(sentencia, 3, unidad.c_str(), static_cast<int>(unidad.size()), SQLITE_TRANSIENT);
+    if (descripcion.empty()) {
+        sqlite3_bind_null(sentencia, 4);
+    } else {
+        sqlite3_bind_text(sentencia, 4, descripcion.c_str(), static_cast<int>(descripcion.size()), SQLITE_TRANSIENT);
+    }
+    sqlite3_bind_int64(sentencia, 5, datos.getUmbralMinimo());
+
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+
+    if (resultado != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    idGenerado = sqlite3_last_insert_rowid(conexion);
+    error.clear();
+    return true;
+}
+
+bool InventarioRepository::actualizar(long long idMedicamento,
+                                      const Medicamento& datos,
+                                      std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return false;
+    }
+
+    const std::string sql =
+        "UPDATE medicamentos SET nombre = ?, tipo_insumo = ?, unidad_medida = ?, descripcion = ?, umbral_minimo = ? "
+        "WHERE id_medicamento = ?;";
+    sqlite3_stmt* sentencia = nullptr;
+    if (sqlite3_prepare_v2(conexion, sql.c_str(), -1, &sentencia, nullptr) != SQLITE_OK) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    const std::string nombre = datos.getNombre();
+    const std::string tipo = datos.getTipoInsumo();
+    const std::string unidad = datos.getUnidadMedida();
+    const std::string descripcion = datos.getDescripcion();
+
+    sqlite3_bind_text(sentencia, 1, nombre.c_str(), static_cast<int>(nombre.size()), SQLITE_TRANSIENT);
+    sqlite3_bind_text(sentencia, 2, tipo.c_str(), static_cast<int>(tipo.size()), SQLITE_TRANSIENT);
+    sqlite3_bind_text(sentencia, 3, unidad.c_str(), static_cast<int>(unidad.size()), SQLITE_TRANSIENT);
+    if (descripcion.empty()) {
+        sqlite3_bind_null(sentencia, 4);
+    } else {
+        sqlite3_bind_text(sentencia, 4, descripcion.c_str(), static_cast<int>(descripcion.size()), SQLITE_TRANSIENT);
+    }
+    sqlite3_bind_int64(sentencia, 5, datos.getUmbralMinimo());
+    sqlite3_bind_int64(sentencia, 6, idMedicamento);
+
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+
+    if (resultado != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    if (sqlite3_changes(conexion) == 0) {
+        error = "No se encontró el medicamento para actualizar";
+        return false;
+    }
+
+    error.clear();
+    return true;
+}
+
 bool InventarioRepository::listar(std::vector<Medicamento>& medicamentos, std::string& error) const {
     sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
     if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {

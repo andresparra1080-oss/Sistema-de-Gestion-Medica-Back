@@ -20,6 +20,12 @@ struct ResumenInventario {
 
 class InventarioService {
 public:
+    ResultadoOperacion crear(const Medicamento& datos,
+                             Medicamento& creado,
+                             std::string& mensaje) const;
+    ResultadoOperacion actualizar(long long idMedicamento,
+                                 const Medicamento& datos,
+                                 std::string& mensaje) const;
     ResultadoOperacion listar(std::vector<Medicamento>& medicamentos,
                               ResumenInventario& resumen,
                               std::string& mensaje) const;
