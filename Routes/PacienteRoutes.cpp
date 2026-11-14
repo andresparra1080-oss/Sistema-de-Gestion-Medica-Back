@@ -1,5 +1,6 @@
 #include "Routes/PacienteRoutes.h"
 
+#include <cctype>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
@@ -8,6 +9,46 @@
 #include "Models/Paciente.h"
 
 namespace {
+
+std::string normalizarRol(const std::string& rol) {
+    std::string salida;
+    salida.reserve(rol.size());
+
+    for (unsigned char c : rol) {
+        switch (c) {
+            case 0xC1: case 0xE1: salida += 'a'; break; // Á / á
+            case 0xC9: case 0xE9: salida += 'e'; break; // É / é
+            case 0xCD: case 0xED: salida += 'i'; break; // Í / í
+            case 0xD3: case 0xF3: salida += 'o'; break; // Ó / ó
+            case 0xDA: case 0xFA: salida += 'u'; break; // Ú / ú
+            case 0xDC: case 0xFC: salida += 'u'; break; // Ü / ü
+            default:
+                if (std::isalnum(c) || c == '/' || c == '-' || c == ' ') {
+                    salida.push_back(static_cast<char>(std::tolower(c)));
+                }
+                break;
+        }
+    }
+
+    std::string limpio;
+    limpio.reserve(salida.size());
+    for (char c : salida) {
+        if (c == ' ' && (!limpio.empty() && limpio.back() == ' ')) {
+            continue;
+        }
+        limpio.push_back(c);
+    }
+
+    return limpio;
+}
+
+bool tienePermisoPaciente(const std::string& rol) {
+    const std::string rolNormalizado = normalizarRol(rol);
+    return rolNormalizado == "capitan" ||
+           rolNormalizado == "capitan medico principal" ||
+           rolNormalizado == "cirujano" ||
+           rolNormalizado == "cirujano naval";
+}
 
 nlohmann::json aJson(const Paciente& paciente) {
     nlohmann::json json;
@@ -34,19 +75,16 @@ nlohmann::json aJson(const Paciente& paciente) {
     json["recompensa"] = paciente.getRecompensa();
     json["estado_salud"] = paciente.getEstadoSalud();
 
-    // Observaciones de la historia clínica del paciente.
     if (paciente.getObservaciones().empty()) {
         json["observaciones"] = nullptr;
     } else {
         json["observaciones"] = paciente.getObservaciones();
     }
 
-    // Alias para compatibilidad con el frontend.
     json["estado"] = paciente.getEstadoSalud();
     return json;
 }
 
-// Convierte el JSON del request a un Paciente.
 bool leerCuerpo(const std::string& textoJson, Paciente& datos, std::string& error) {
     nlohmann::json cuerpo;
     try {
@@ -71,7 +109,6 @@ bool leerCuerpo(const std::string& textoJson, Paciente& datos, std::string& erro
         datos.setRecompensa(cuerpo.value("recompensa", static_cast<long long>(0)));
         datos.setObservaciones(cuerpo.value("observaciones", ""));
 
-        // Acepta ambos nombres de campo.
         std::string estado = cuerpo.value("estado_salud", "");
         if (estado.empty()) {
             estado = cuerpo.value("estado", "");
@@ -108,7 +145,6 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             std::vector<Paciente> pacientes;
             std::string mensaje;
             const ResultadoOperacion resultado = pacienteService_.listar(pacientes, mensaje);
-
             if (resultado != ResultadoOperacion::Exito) {
                 return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
             }
@@ -133,21 +169,19 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
-            // KAN-17: Permisos por rol. Solo Capitán y Cirujano pueden registrar pacientes.
-            if (rol != "Capitán" && rol != "Cirujano") {
+            if (!tienePermisoPaciente(rol)) {
                 return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden registrar pacientes");
-        }
+            }
 
-        Paciente datos;
-        std::string errorCuerpo;
-        if (!leerCuerpo(peticion.body, datos, errorCuerpo)) {
+            Paciente datos;
+            std::string errorCuerpo;
+            if (!leerCuerpo(peticion.body, datos, errorCuerpo)) {
                 return ApiHttp::respuestaError(400, errorCuerpo);
             }
 
             Paciente creado;
             std::string mensaje;
             const ResultadoOperacion resultado = pacienteService_.crear(datos, creado, mensaje);
-
             if (resultado != ResultadoOperacion::Exito) {
                 return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
             }
@@ -158,29 +192,27 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             cuerpo["paciente"] = aJson(creado);
             return ApiHttp::respuestaJson(201, cuerpo.dump());
         });
-    
+
     CROW_ROUTE(app, "/api/pacientes/<int>")
-    .methods(crow::HTTPMethod::Get)([this](const crow::request& peticion, int idPaciente) {
-        std::string correo;
-        std::string rol;
-        if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
-            return ApiHttp::respuestaError(401, "Token ausente o inválido");
-        }
+        .methods(crow::HTTPMethod::Get)([this](const crow::request& peticion, int idPaciente) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
 
-        Paciente paciente;
-        std::string mensaje;
-        const ResultadoOperacion resultado =
-            pacienteService_.obtenerPorId(idPaciente, paciente, mensaje);
+            Paciente paciente;
+            std::string mensaje;
+            const ResultadoOperacion resultado = pacienteService_.obtenerPorId(idPaciente, paciente, mensaje);
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
 
-        if (resultado != ResultadoOperacion::Exito) {
-            return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
-        }
-
-        nlohmann::json cuerpo;
-        cuerpo["success"] = true;
-        cuerpo["paciente"] = aJson(paciente);
-        return ApiHttp::respuestaJson(200, cuerpo.dump());
-    });
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["paciente"] = aJson(paciente);
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
 
     CROW_ROUTE(app, "/api/pacientes/<int>")
         .methods(crow::HTTPMethod::Put)([this](const crow::request& peticion, int idPaciente) {
@@ -189,10 +221,11 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
-            // KAN-17: Permisos por rol. Solo Capitán y Cirujano pueden modificar pacientes.
-            if (rol != "Capitán" && rol != "Cirujano") {
-            return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden modificar pacientes");
-        }
+
+            if (!tienePermisoPaciente(rol)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden modificar pacientes");
+            }
+
             Paciente datos;
             std::string errorCuerpo;
             if (!leerCuerpo(peticion.body, datos, errorCuerpo)) {
@@ -201,9 +234,7 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
 
             Paciente actualizado;
             std::string mensaje;
-            const ResultadoOperacion resultado =
-                pacienteService_.actualizar(idPaciente, datos, actualizado, mensaje);
-
+            const ResultadoOperacion resultado = pacienteService_.actualizar(idPaciente, datos, actualizado, mensaje);
             if (resultado != ResultadoOperacion::Exito) {
                 return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
             }
@@ -212,6 +243,30 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             cuerpo["success"] = true;
             cuerpo["message"] = mensaje;
             cuerpo["paciente"] = aJson(actualizado);
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
+
+    CROW_ROUTE(app, "/api/pacientes/<int>")
+        .methods(crow::HTTPMethod::Delete)([this](const crow::request& peticion, int idPaciente) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            if (!tienePermisoPaciente(rol)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden eliminar pacientes");
+            }
+
+            std::string mensaje;
+            const ResultadoOperacion resultado = pacienteService_.eliminar(idPaciente, mensaje);
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["message"] = mensaje;
             return ApiHttp::respuestaJson(200, cuerpo.dump());
         });
 }

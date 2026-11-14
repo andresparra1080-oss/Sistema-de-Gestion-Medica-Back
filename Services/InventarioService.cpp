@@ -49,3 +49,33 @@ ResultadoOperacion InventarioService::listar(std::vector<Medicamento>& medicamen
     mensaje = "Inventario consultado";
     return ResultadoOperacion::Exito;
 }
+
+ResultadoOperacion InventarioService::eliminar(long long idMedicamento,
+                                                std::string& mensaje) const {
+    if (idMedicamento <= 0) {
+        mensaje = "El identificador del medicamento no es válido";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    InventarioRepository repository;
+    if (!repository.existeId(idMedicamento)) {
+        mensaje = "No existe el medicamento indicado";
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    std::string error;
+    if (!repository.eliminar(idMedicamento, error)) {
+        if (error.find("FOREIGN KEY") != std::string::npos ||
+            error.find("fk_") != std::string::npos ||
+            error.find("constraint") != std::string::npos) {
+            mensaje = "No se puede eliminar el medicamento porque tiene lotes o movimientos asociados";
+            return ResultadoOperacion::Conflicto;
+        }
+
+        mensaje = error.empty() ? "No se pudo eliminar el medicamento" : error;
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    mensaje = "Medicamento eliminado";
+    return ResultadoOperacion::Exito;
+}

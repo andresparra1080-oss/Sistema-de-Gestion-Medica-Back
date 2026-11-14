@@ -288,4 +288,32 @@ void TratamientoRoutes::registrarRutas(
             return ApiHttp::respuestaError(400, "JSON inválido");
         }
     });
+
+    // Eliminar un tratamiento.
+    CROW_ROUTE(app, "/api/tratamientos/<int>")
+        .methods(crow::HTTPMethod::Delete)(
+            [this](const crow::request& peticion, int idTratamiento) {
+
+        std::string correo;
+        std::string rol;
+
+        if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+            return ApiHttp::respuestaError(401, "Token ausente o inválido");
+        }
+
+        std::string mensaje;
+        const ResultadoOperacion resultado =
+            tratamientoService_.eliminar(idTratamiento, mensaje);
+
+        if (resultado != ResultadoOperacion::Exito) {
+            return ApiHttp::respuestaError(
+                ApiHttp::codigoHttpDe(resultado), mensaje);
+        }
+
+        nlohmann::json respuesta;
+        respuesta["success"] = true;
+        respuesta["message"] = mensaje;
+
+        return ApiHttp::respuestaJson(200, respuesta.dump());
+    });
 }

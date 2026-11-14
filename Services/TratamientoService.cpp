@@ -401,3 +401,35 @@ ResultadoOperacion TratamientoService::cambiarEstado(
     mensaje = "Estado del tratamiento actualizado correctamente";
     return ResultadoOperacion::Exito;
 }
+
+ResultadoOperacion TratamientoService::eliminar(long long idTratamiento,
+                                                std::string& mensaje) const {
+    if (idTratamiento <= 0) {
+        mensaje = "El identificador del tratamiento no es válido";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    TratamientoRepository repository;
+    Tratamiento actual;
+    std::string error;
+
+    if (!repository.buscarPorId(idTratamiento, actual, error)) {
+        mensaje = "No existe el tratamiento indicado";
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    if (!repository.eliminar(idTratamiento, error)) {
+        if (error.find("FOREIGN KEY") != std::string::npos ||
+            error.find("fk_") != std::string::npos ||
+            error.find("constraint") != std::string::npos) {
+            mensaje = "No se puede eliminar el tratamiento porque tiene dependencias asociadas";
+            return ResultadoOperacion::Conflicto;
+        }
+
+        mensaje = error.empty() ? "No se pudo eliminar el tratamiento" : error;
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    mensaje = "Tratamiento eliminado";
+    return ResultadoOperacion::Exito;
+}

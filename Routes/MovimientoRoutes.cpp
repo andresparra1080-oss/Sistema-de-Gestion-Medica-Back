@@ -157,4 +157,24 @@ void MovimientoRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             cuerpo["stock"] = aJson(stock);
             return ApiHttp::respuestaJson(201, cuerpo.dump());
         });
+
+    CROW_ROUTE(app, "/api/movimientos/<int>")
+        .methods(crow::HTTPMethod::Delete)([this](const crow::request& peticion, int idMovimiento) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            std::string mensaje;
+            const ResultadoOperacion resultado = movimientoService_.eliminar(idMovimiento, mensaje);
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["message"] = mensaje;
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
 }

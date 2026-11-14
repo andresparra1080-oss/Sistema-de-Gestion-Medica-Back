@@ -161,3 +161,27 @@ ResultadoOperacion MovimientoService::listar(long long limite,
     mensaje = "Historial de movimientos";
     return ResultadoOperacion::Exito;
 }
+
+ResultadoOperacion MovimientoService::eliminar(long long idMovimiento,
+                                                std::string& mensaje) const {
+    if (idMovimiento <= 0) {
+        mensaje = "El identificador del movimiento no es válido";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    MovimientoRepository repository;
+    MovimientoInventario existente;
+    if (!repository.buscarPorId(idMovimiento, existente)) {
+        mensaje = "No existe el movimiento indicado";
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    std::string error;
+    if (!repository.eliminar(idMovimiento, error)) {
+        mensaje = "Los movimientos de inventario no se pueden eliminar; se registra un movimiento compensatorio";
+        return ResultadoOperacion::Conflicto;
+    }
+
+    mensaje = "Movimiento eliminado";
+    return ResultadoOperacion::Exito;
+}

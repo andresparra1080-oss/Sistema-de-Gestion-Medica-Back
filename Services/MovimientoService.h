@@ -22,4 +22,7 @@ public:
                                  MovimientoInventario& registrado,
                                  StockResultante& stock,
                                  std::string& mensaje) const;
+
+    ResultadoOperacion eliminar(long long idMovimiento,
+                                std::string& mensaje) const;
 };

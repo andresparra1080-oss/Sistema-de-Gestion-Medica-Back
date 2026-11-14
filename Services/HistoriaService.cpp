@@ -188,3 +188,33 @@ ResultadoOperacion HistoriaService::actualizar(long long idPaciente,
     mensaje = "Historia clínica actualizada";
     return ResultadoOperacion::Exito;
 }
+
+ResultadoOperacion HistoriaService::eliminar(long long idPaciente,
+                                            std::string& mensaje) const {
+    if (idPaciente <= 0) {
+        mensaje = "El identificador del paciente no es válido";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    HistoriaRepository repository;
+    if (!repository.existePaciente(idPaciente)) {
+        mensaje = "No existe un paciente con ese identificador";
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    std::string error;
+    if (!repository.eliminarPorPaciente(idPaciente, error)) {
+        if (error.find("FOREIGN KEY") != std::string::npos ||
+            error.find("fk_") != std::string::npos ||
+            error.find("constraint") != std::string::npos) {
+            mensaje = "No se puede eliminar la historia clínica porque hay datos dependientes";
+            return ResultadoOperacion::Conflicto;
+        }
+
+        mensaje = error.empty() ? "No se pudo eliminar la historia clínica" : error;
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    mensaje = "Historia clínica eliminada";
+    return ResultadoOperacion::Exito;
+}

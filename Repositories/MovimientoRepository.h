@@ -42,4 +42,7 @@ public:
     bool crear(const MovimientoInventario& movimiento, long long& idGenerado, std::string& error) const;
     bool buscarPorId(long long idMovimiento, MovimientoInventario& movimiento) const;
     bool obtenerStock(long long idLote, StockResultante& stock) const;
+    // Los movimientos son un libro de contabilidad: se bloquea la eliminación
+    // para evitar inconsistencias de inventario.
+    bool eliminar(long long idMovimiento, std::string& error) const;
 };

@@ -23,4 +23,6 @@ public:
     ResultadoOperacion listar(std::vector<Medicamento>& medicamentos,
                               ResumenInventario& resumen,
                               std::string& mensaje) const;
+    ResultadoOperacion eliminar(long long idMedicamento,
+                                std::string& mensaje) const;
 };

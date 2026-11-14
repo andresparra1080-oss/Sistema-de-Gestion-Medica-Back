@@ -299,3 +299,66 @@ bool HistoriaRepository::actualizar(long long idHistoria,
     error.clear();
     return true;
 }
+
+bool HistoriaRepository::eliminarPorPaciente(long long idPaciente, std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return false;
+    }
+
+    if (!ejecutar(conexion, "BEGIN IMMEDIATE;")) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    sqlite3_stmt* borradoAlergias = nullptr;
+    const std::string sqlAlergias =
+        "DELETE FROM alergias "
+        "WHERE id_historia IN (SELECT id_historia FROM historias_clinicas WHERE id_paciente = ?);";
+    if (sqlite3_prepare_v2(conexion, sqlAlergias.c_str(), -1, &borradoAlergias, nullptr) != SQLITE_OK) {
+        error = sqlite3_errmsg(conexion);
+        ejecutar(conexion, "ROLLBACK;");
+        return false;
+    }
+
+    sqlite3_bind_int64(borradoAlergias, 1, idPaciente);
+    if (sqlite3_step(borradoAlergias) != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        sqlite3_finalize(borradoAlergias);
+        ejecutar(conexion, "ROLLBACK;");
+        return false;
+    }
+    sqlite3_finalize(borradoAlergias);
+
+    sqlite3_stmt* borradoHistoria = nullptr;
+    const std::string sqlHistoria = "DELETE FROM historias_clinicas WHERE id_paciente = ?;";
+    if (sqlite3_prepare_v2(conexion, sqlHistoria.c_str(), -1, &borradoHistoria, nullptr) != SQLITE_OK) {
+        error = sqlite3_errmsg(conexion);
+        ejecutar(conexion, "ROLLBACK;");
+        return false;
+    }
+
+    sqlite3_bind_int64(borradoHistoria, 1, idPaciente);
+    if (sqlite3_step(borradoHistoria) != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        sqlite3_finalize(borradoHistoria);
+        ejecutar(conexion, "ROLLBACK;");
+        return false;
+    }
+    sqlite3_finalize(borradoHistoria);
+
+    if (!ejecutar(conexion, "COMMIT;")) {
+        error = sqlite3_errmsg(conexion);
+        ejecutar(conexion, "ROLLBACK;");
+        return false;
+    }
+
+    if (sqlite3_changes(conexion) == 0) {
+        error = "No existe una historia clínica para eliminar";
+        return false;
+    }
+
+    error.clear();
+    return true;
+}

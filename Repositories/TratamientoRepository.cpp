@@ -367,3 +367,38 @@ bool TratamientoRepository::cambiarEstado(
     error.clear();
     return true;
 }
+
+bool TratamientoRepository::eliminar(
+    long long idTratamiento,
+    std::string& error) const {
+
+    sqlite3* conexion = nullptr;
+
+    if (!obtenerConexion(conexion, error)) {
+        return false;
+    }
+
+    const std::string sql = "DELETE FROM tratamientos WHERE id_tratamiento = ?;";
+    sqlite3_stmt* sentencia = nullptr;
+
+    if (!prepararConsulta(conexion, sql, sentencia, error)) {
+        return false;
+    }
+
+    sqlite3_bind_int64(sentencia, 1, idTratamiento);
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+
+    if (resultado != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    if (sqlite3_changes(conexion) == 0) {
+        error = "No se encontró el tratamiento para eliminar";
+        return false;
+    }
+
+    error.clear();
+    return true;
+}

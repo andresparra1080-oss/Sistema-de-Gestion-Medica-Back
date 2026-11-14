@@ -35,4 +35,8 @@ public:
                        const std::string& estado,
                        const std::string& fechaFinalizacionEfectiva,
                        std::string& error) const;
+
+    // Elimina un tratamiento solo si no tiene dependencias asociadas.
+    bool eliminar(long long idTratamiento,
+                  std::string& error) const;
 };

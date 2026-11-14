@@ -183,6 +183,38 @@ bool MovimientoRepository::obtenerStock(long long idLote, StockResultante& stock
     return encontrado;
 }
 
+bool MovimientoRepository::eliminar(long long idMovimiento, std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return false;
+    }
+
+    const std::string sql = "DELETE FROM movimientos_inventario WHERE id_movimiento = ?;";
+    sqlite3_stmt* sentencia = nullptr;
+    if (sqlite3_prepare_v2(conexion, sql.c_str(), -1, &sentencia, nullptr) != SQLITE_OK) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    sqlite3_bind_int64(sentencia, 1, idMovimiento);
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+
+    if (resultado != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    if (sqlite3_changes(conexion) == 0) {
+        error = "No se encontró el movimiento para eliminar";
+        return false;
+    }
+
+    error.clear();
+    return true;
+}
+
 MovimientoDetallado::MovimientoDetallado()
     : numLote(""),
       idMedicamento(0),

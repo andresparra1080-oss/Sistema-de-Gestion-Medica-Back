@@ -17,4 +17,6 @@ public:
     bool crear(const Paciente& paciente, long long& idGenerado, std::string& error) const;
     // Actualiza el paciente y las observaciones de su historia clínica.
     bool actualizar(const Paciente& paciente, std::string& error) const;
+    // Elimina un paciente solo si no tiene dependencias que la base impide borrar.
+    bool eliminar(long long idPaciente, std::string& error) const;
 };

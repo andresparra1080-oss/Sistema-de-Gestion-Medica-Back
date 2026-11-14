@@ -32,4 +32,8 @@ public:
                                      const std::string& estado,
                                      const std::string& fechaFinalizacion,
                                      std::string& mensaje) const;
+
+    // Elimina un tratamiento cuando no tiene dependencias registradas.
+    ResultadoOperacion eliminar(long long idTratamiento,
+                                std::string& mensaje) const;
 };

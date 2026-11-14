@@ -16,4 +16,7 @@ public:
                                   const CambiosHistoria& cambios,
                                   HistoriaClinica& actualizada,
                                   std::string& mensaje) const;
+
+    ResultadoOperacion eliminar(long long idPaciente,
+                                std::string& mensaje) const;
 };

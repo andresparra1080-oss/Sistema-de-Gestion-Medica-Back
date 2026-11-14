@@ -15,4 +15,5 @@ public:
                                   Paciente& actualizado,
                                   std::string& mensaje) const;
     ResultadoOperacion obtenerPorId(long long idPaciente, Paciente& paciente, std::string& mensaje) const;
+    ResultadoOperacion eliminar(long long idPaciente, std::string& mensaje) const;
 };

@@ -290,3 +290,32 @@ ResultadoOperacion PacienteService::actualizar(long long idPaciente,
     mensaje = "Paciente actualizado";
     return ResultadoOperacion::Exito;
 }
+
+ResultadoOperacion PacienteService::eliminar(long long idPaciente, std::string& mensaje) const {
+    if (idPaciente <= 0) {
+        mensaje = "El identificador del paciente no es válido";
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    PacienteRepository repository;
+    if (!repository.existeId(idPaciente)) {
+        mensaje = "No existe un paciente con ese identificador";
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    std::string error;
+    if (!repository.eliminar(idPaciente, error)) {
+        if (error.find("FOREIGN KEY") != std::string::npos ||
+            error.find("fk_") != std::string::npos ||
+            error.find("constraint") != std::string::npos) {
+            mensaje = "No se puede eliminar el paciente porque tiene datos asociados";
+            return ResultadoOperacion::Conflicto;
+        }
+
+        mensaje = error.empty() ? "No se pudo eliminar el paciente" : error;
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    mensaje = "Paciente eliminado";
+    return ResultadoOperacion::Exito;
+}

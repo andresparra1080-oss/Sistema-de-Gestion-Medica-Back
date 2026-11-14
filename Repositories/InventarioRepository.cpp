@@ -19,6 +19,25 @@ std::string leerTexto(sqlite3_stmt* sentencia, int columna) {
 
 }  // namespace
 
+bool InventarioRepository::existeId(long long idMedicamento) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        return false;
+    }
+
+    sqlite3_stmt* sentencia = nullptr;
+    if (sqlite3_prepare_v2(conexion,
+                           "SELECT 1 FROM medicamentos WHERE id_medicamento = ? LIMIT 1;",
+                           -1, &sentencia, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
+    sqlite3_bind_int64(sentencia, 1, idMedicamento);
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+    return resultado == SQLITE_ROW;
+}
+
 bool InventarioRepository::listar(std::vector<Medicamento>& medicamentos, std::string& error) const {
     sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
     if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
@@ -87,6 +106,38 @@ bool InventarioRepository::listar(std::vector<Medicamento>& medicamentos, std::s
     }
 
     sqlite3_finalize(sentenciaLotes);
+    error.clear();
+    return true;
+}
+
+bool InventarioRepository::eliminar(long long idMedicamento, std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return false;
+    }
+
+    const std::string sql = "DELETE FROM medicamentos WHERE id_medicamento = ?;";
+    sqlite3_stmt* sentencia = nullptr;
+    if (sqlite3_prepare_v2(conexion, sql.c_str(), -1, &sentencia, nullptr) != SQLITE_OK) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    sqlite3_bind_int64(sentencia, 1, idMedicamento);
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+
+    if (resultado != SQLITE_DONE) {
+        error = sqlite3_errmsg(conexion);
+        return false;
+    }
+
+    if (sqlite3_changes(conexion) == 0) {
+        error = "No se encontró el medicamento para eliminar";
+        return false;
+    }
+
     error.clear();
     return true;
 }
