@@ -37,6 +37,9 @@ public:
     bool listar(long long limite, std::vector<MovimientoDetallado>& movimientos, std::string& error) const;
     bool existeLote(long long idLote) const;
     bool existeTratamiento(long long idTratamiento) const;
+    bool tratamientoEstaActivo(long long idTratamiento) const;
+    // Usa la misma fecha que el esquema: date('now', '-5 hours').
+    bool loteEstaVencido(long long idLote) const;
     // Inserta el movimiento. No actualiza el stock: de eso se encargan los
     // triggers trg_movimientos_inventario_ai_stock y trg_lotes_au_total_medicamento.
     bool crear(const MovimientoInventario& movimiento, long long& idGenerado, std::string& error) const;

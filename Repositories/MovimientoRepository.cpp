@@ -51,6 +51,18 @@ bool MovimientoRepository::existeTratamiento(long long idTratamiento) const {
     return existeEn("SELECT 1 FROM tratamientos WHERE id_tratamiento = ? LIMIT 1;", idTratamiento);
 }
 
+bool MovimientoRepository::tratamientoEstaActivo(long long idTratamiento) const {
+    return existeEn("SELECT 1 FROM tratamientos WHERE id_tratamiento = ? "
+                    "AND estado_tratamiento = 'ACTIVO' LIMIT 1;",
+                    idTratamiento);
+}
+
+bool MovimientoRepository::loteEstaVencido(long long idLote) const {
+    return existeEn("SELECT 1 FROM lotes WHERE id_lote = ? "
+                    "AND fecha_vencimiento < date('now', '-5 hours') LIMIT 1;",
+                    idLote);
+}
+
 bool MovimientoRepository::crear(const MovimientoInventario& movimiento,
                                  long long& idGenerado,
                                  std::string& error) const {
