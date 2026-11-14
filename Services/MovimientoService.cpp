@@ -91,6 +91,20 @@ ResultadoOperacion MovimientoService::registrar(const MovimientoInventario& dato
         return ResultadoOperacion::NoEncontrado;
     }
 
+    // Solo se dispensa contra una receta vigente; aquí el tipo ya es CONSUMO
+    // porque un tratamiento no puede ir ligado a otro tipo de movimiento.
+    if (datos.tieneIdTratamiento() && !repository.tratamientoEstaActivo(datos.getIdTratamiento())) {
+        mensaje = "Solo se puede dispensar un tratamiento activo";
+        return ResultadoOperacion::Conflicto;
+    }
+
+    // Un lote vencido no se consume. ENTRADA y BAJA no se validan: la BAJA es
+    // justamente la forma de sacar del inventario un lote vencido.
+    if (tipo == "CONSUMO" && repository.loteEstaVencido(datos.getIdLote())) {
+        mensaje = "El lote está vencido; regístralo como BAJA";
+        return ResultadoOperacion::Conflicto;
+    }
+
     UsuarioRepository usuarios;
     const long long idUsuario = usuarios.obtenerIdPorCorreo(correoUsuario);
     if (idUsuario <= 0) {
