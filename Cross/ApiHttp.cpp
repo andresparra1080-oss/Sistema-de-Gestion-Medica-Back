@@ -25,6 +25,8 @@ int codigoHttpDe(ResultadoOperacion resultado) {
             return 200;
         case ResultadoOperacion::DatosInvalidos:
             return 400;
+        case ResultadoOperacion::SinPermiso:
+            return 403;
         case ResultadoOperacion::NoEncontrado:
             return 404;
         case ResultadoOperacion::Duplicado:

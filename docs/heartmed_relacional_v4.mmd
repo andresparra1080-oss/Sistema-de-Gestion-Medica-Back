@@ -113,6 +113,7 @@ erDiagram
         TEXT motivo
         TEXT diagnostico
         DATETIME fecha_evento
+        INTEGER id_emergencia FK "NULL; emergencia que originó el evento"
     }
 
     controles_evolucion {
@@ -208,7 +209,8 @@ erDiagram
         INTEGER id_medicamento FK "NULL; solo STOCK_BAJO"
         INTEGER id_lote FK "NULL; solo VENCIMIENTO_PROXIMO"
         INTEGER id_tratamiento FK "NULL; solo DOSIS_PENDIENTE"
-        TEXT tipo_alerta "STOCK_BAJO, VENCIMIENTO_PROXIMO, DOSIS_PENDIENTE"
+        INTEGER id_emergencia FK "NULL; solo EMERGENCIA"
+        TEXT tipo_alerta "STOCK_BAJO, VENCIMIENTO_PROXIMO, DOSIS_PENDIENTE, EMERGENCIA"
         VARCHAR(300) mensaje
         TEXT prioridad "BAJA, MEDIA, ALTA, CRITICA"
         INTEGER notificada "0 o 1, por defecto 0"
@@ -256,6 +258,8 @@ erDiagram
     medicamentos |o--o{ alertas : "stock bajo"
     lotes |o--o{ alertas : vencimiento
     tratamientos |o--o{ alertas : "dosis pendiente"
+    emergencias |o--o{ alertas : "alerta de emergencia"
+    emergencias |o--o{ eventos_medicos : "origina"
 
     %% =========================================================
     %% COLORES POR MÓDULO

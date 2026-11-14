@@ -133,9 +133,14 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
-            Paciente datos;
-            std::string errorCuerpo;
-            if (!leerCuerpo(peticion.body, datos, errorCuerpo)) {
+            // KAN-17: Permisos por rol. Solo Capitán y Cirujano pueden registrar pacientes.
+            if (rol != "Capitán" && rol != "Cirujano") {
+                return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden registrar pacientes");
+        }
+
+        Paciente datos;
+        std::string errorCuerpo;
+        if (!leerCuerpo(peticion.body, datos, errorCuerpo)) {
                 return ApiHttp::respuestaError(400, errorCuerpo);
             }
 
@@ -184,7 +189,10 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
-
+            // KAN-17: Permisos por rol. Solo Capitán y Cirujano pueden modificar pacientes.
+            if (rol != "Capitán" && rol != "Cirujano") {
+            return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden modificar pacientes");
+        }
             Paciente datos;
             std::string errorCuerpo;
             if (!leerCuerpo(peticion.body, datos, errorCuerpo)) {
