@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(CTest)
+
 if (WIN32 AND EXISTS "C:/msys64/mingw64")
     set(OPENSSL_ROOT_DIR "C:/msys64/mingw64" CACHE PATH "OpenSSL root directory" FORCE)
     list(APPEND CMAKE_PREFIX_PATH "C:/msys64/mingw64")
@@ -44,18 +46,21 @@ add_executable(heartmed-backend
     Models/HistoriaClinica.cpp
     Models/Tratamiento.cpp
     Repositories/UsuarioRepository.cpp
+    Repositories/GestionUsuarioRepository.cpp
     Repositories/PacienteRepository.cpp
     Repositories/InventarioRepository.cpp
     Repositories/MovimientoRepository.cpp
     Repositories/HistoriaRepository.cpp
     Repositories/TratamientoRepository.cpp
     Services/AuthService.cpp
+    Services/GestionUsuarioService.cpp
     Services/PacienteService.cpp
     Services/InventarioService.cpp
     Services/MovimientoService.cpp
     Services/HistoriaService.cpp
     Services/TratamientoService.cpp
     Routes/AuthRoutes.cpp
+    Routes/GestionUsuarioRoutes.cpp
     Routes/PacienteRoutes.cpp
     Routes/InventarioRoutes.cpp
     Routes/MovimientoRoutes.cpp
@@ -74,18 +79,22 @@ add_executable(heartmed-backend
     Models/HistoriaClinica.h
     Models/Tratamiento.h
     Repositories/UsuarioRepository.h
+    Repositories/GestionUsuarioRepository.h
     Repositories/PacienteRepository.h
     Repositories/InventarioRepository.h
     Repositories/MovimientoRepository.h
     Repositories/HistoriaRepository.h
     Repositories/TratamientoRepository.h
     Routes/AuthRoutes.h
+    Routes/GestionUsuarioRoutes.h
     Routes/PacienteRoutes.h
     Routes/InventarioRoutes.h
     Routes/MovimientoRoutes.h
     Routes/HistoriaRoutes.h
     Routes/TratamientoRoutes.h
     Services/PacienteService.h
+    Services/GestionUsuarioService.h
+    Models/Usuario.h
     Services/InventarioService.h
     Services/MovimientoService.h
     Services/HistoriaService.h
@@ -119,3 +128,26 @@ target_link_libraries(heartmed-backend
         ws2_32
         wsock32
 )
+
+if (BUILD_TESTING)
+    add_executable(gestion-usuario-tests
+        tests/GestionUsuarioTests.cpp
+        Repositories/GestionUsuarioRepository.cpp
+        Services/GestionUsuarioService.cpp
+        Database/SQLite.cpp
+        Cross/PasswordHash.cpp
+    )
+
+    target_include_directories(gestion-usuario-tests
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}
+    )
+
+    target_link_libraries(gestion-usuario-tests
+        PRIVATE
+            SQLite::SQLite3
+            OpenSSL::Crypto
+    )
+
+    add_test(NAME gestion-usuario-tests COMMAND gestion-usuario-tests)
+endif()

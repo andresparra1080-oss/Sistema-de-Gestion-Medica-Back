@@ -85,3 +85,31 @@ La tabla `alertas` cambió (nuevo tipo `EMERGENCIA`). Una base nueva ya lo trae 
 ```
 sqlite3 heartmed_db.sqlite3 ".read Database/Scripts_Base_Datos/migracion_emergencias.sql"
 ```
+
+## Gestión de usuarios
+
+Las rutas requieren `Authorization: Bearer <token>` obtenido con `POST /login`.
+La autorización se determina con el ID de la cuenta activa en la base de datos:
+
+- `GET /api/usuarios`: permitido para los usuarios 1, 2, 3 y 4. Devuelve todos
+  los usuarios, incluidos los inactivos, con su estado y rol; nunca incluye
+  contraseñas ni hashes.
+- `POST /api/usuarios`: permitido solo para el usuario 1. Crea una cuenta
+  activa y registra la operación en la auditoría.
+
+Ejemplo de cuerpo para crear un usuario:
+
+```json
+{
+  "nombre": "Nombre del usuario",
+  "correo": "usuario@heartpirates.com",
+  "contrasena": "UnaClave123",
+  "id_rol": 5
+}
+```
+
+La respuesta de creación es `201`; los datos inválidos devuelven `400`, el
+correo ya registrado `409`, y una cuenta autenticada sin permiso `403`.
+
+Las pruebas unitarias de validación, permisos y persistencia se documentan en
+[docs/pruebas_gestion_usuarios.md](./docs/pruebas_gestion_usuarios.md).

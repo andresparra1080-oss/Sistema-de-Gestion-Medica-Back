@@ -15,6 +15,7 @@
 #include "Routes/AlertaRoutes.h"
 #include "Routes/AuthRoutes.h"
 #include "Routes/HistoriaRoutes.h"
+#include "Routes/GestionUsuarioRoutes.h"
 #include "Routes/InventarioRoutes.h"
 #include "Routes/MovimientoRoutes.h"
 #include "Routes/PacienteRoutes.h"
@@ -22,6 +23,7 @@
 #include "Services/AlertaService.h"
 #include "Services/AuthService.h"
 #include "Services/HistoriaService.h"
+#include "Services/GestionUsuarioService.h"
 #include "Services/InventarioService.h"
 #include "Services/MovimientoService.h"
 #include "Services/PacienteService.h"
@@ -64,6 +66,10 @@ int main()
     AuthService servicioAutenticacion;
     AuthRoutes rutasAutenticacion(servicioAutenticacion);
     rutasAutenticacion.registrarRutas(aplicacion);
+
+    GestionUsuarioService servicioGestionUsuarios;
+    GestionUsuarioRoutes rutasGestionUsuarios(servicioGestionUsuarios);
+    rutasGestionUsuarios.registrarRutas(aplicacion);
 
     PacienteService servicioPacientes;
     PacienteRoutes rutasPacientes(servicioPacientes);
