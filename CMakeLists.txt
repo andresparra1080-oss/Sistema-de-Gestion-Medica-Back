@@ -13,6 +13,22 @@ endif()
 
 include(FetchContent)
 find_package(SQLite3 REQUIRED)
+
+if (NOT TARGET SQLite3::SQLite3)
+    if (TARGET SQLite::SQLite3)
+        add_library(SQLite3::SQLite3 ALIAS SQLite::SQLite3)
+    else()
+        find_path(SQLite3_INCLUDE_DIR NAMES sqlite3.h REQUIRED)
+        find_library(SQLite3_LIBRARY NAMES sqlite3 REQUIRED)
+
+        add_library(SQLite3::SQLite3 UNKNOWN IMPORTED)
+        set_target_properties(SQLite3::SQLite3 PROPERTIES
+            IMPORTED_LOCATION "${SQLite3_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIR}"
+        )
+    endif()
+endif()
+
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 FetchContent_Declare(
@@ -70,6 +86,12 @@ target_link_libraries(heartmed-backend
         nlohmann_json::nlohmann_json
         SQLite3::SQLite3
         OpenSSL::Crypto
-        ws2_32
-        wsock32
 )
+
+if (WIN32)
+    target_link_libraries(heartmed-backend
+        PRIVATE
+            ws2_32
+            wsock32
+    )
+endif()
