@@ -5,6 +5,7 @@
 
 #include "Cross/ResultadoOperacion.h"
 #include "Models/AccionEmergencia.h"
+#include "Models/CambioEmergencia.h"
 #include "Models/Emergencia.h"
 
 class EmergenciaRepository {
@@ -64,4 +65,24 @@ public:
     ResultadoOperacion eliminar(long long idEmergencia,
                                 long long idUsuario,
                                 std::string& error) const;
+
+    // ---- Consultas (KAN-48, KAN-52, KAN-54) ----
+    // Devuelven Exito, NoEncontrado (la emergencia no existe) o ErrorInterno.
+
+    // Una emergencia con sus pacientes.
+    ResultadoOperacion obtener(long long idEmergencia,
+                               Emergencia& emergencia,
+                               std::string& error) const;
+
+    // Lista de emergencias, las más urgentes y recientes primero.
+    // soloActivas = true devuelve solo ACTIVA y EN_ATENCION.
+    ResultadoOperacion listar(bool soloActivas,
+                              std::vector<Emergencia>& emergencias,
+                              std::string& error) const;
+
+    // Cambios de la emergencia y de sus acciones (logs_auditoria),
+    // del más reciente al más antiguo.
+    ResultadoOperacion listarHistorial(long long idEmergencia,
+                                       std::vector<CambioEmergencia>& historial,
+                                       std::string& error) const;
 };

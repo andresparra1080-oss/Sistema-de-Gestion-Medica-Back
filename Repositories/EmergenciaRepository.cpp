@@ -726,3 +726,124 @@ ResultadoOperacion EmergenciaRepository::eliminar(long long idEmergencia,
     error.clear();
     return ResultadoOperacion::Exito;
 }
+
+// ---------------------------------------------------------------------
+// KAN-48, KAN-52 y KAN-54: consultas de emergencias
+// ---------------------------------------------------------------------
+
+ResultadoOperacion EmergenciaRepository::obtener(long long idEmergencia,
+                                                 Emergencia& emergencia,
+                                                 std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    const ResultadoOperacion resultado = leerEmergencia(conexion, idEmergencia, emergencia, error);
+    if (resultado == ResultadoOperacion::Exito) {
+        error.clear();
+    }
+    return resultado;
+}
+
+ResultadoOperacion EmergenciaRepository::listar(bool soloActivas,
+                                                std::vector<Emergencia>& emergencias,
+                                                std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    // Más urgentes primero y, dentro de cada nivel, las más recientes.
+    std::string sql = "SELECT id_emergencia FROM emergencias ";
+    if (soloActivas) {
+        sql += "WHERE estado IN ('ACTIVA', 'EN_ATENCION') ";
+    }
+    sql +=
+        "ORDER BY CASE nivel_urgencia "
+        "WHEN 'CRITICA' THEN 0 WHEN 'ALTA' THEN 1 WHEN 'MEDIA' THEN 2 ELSE 3 END, "
+        "fecha_inicio DESC, id_emergencia DESC;";
+
+    sqlite3_stmt* sentencia = nullptr;
+    if (!preparar(conexion, sql.c_str(), &sentencia, error)) {
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    std::vector<long long> ids;
+    while (sqlite3_step(sentencia) == SQLITE_ROW) {
+        ids.push_back(sqlite3_column_int64(sentencia, 0));
+    }
+    sqlite3_finalize(sentencia);
+
+    // Cada emergencia se lee con sus pacientes, igual que en el detalle.
+    emergencias.clear();
+    for (const long long id : ids) {
+        Emergencia emergencia;
+        const ResultadoOperacion lectura = leerEmergencia(conexion, id, emergencia, error);
+        if (lectura == ResultadoOperacion::NoEncontrado) {
+            continue;  // la eliminaron mientras se armaba la lista
+        }
+        if (lectura != ResultadoOperacion::Exito) {
+            return lectura;
+        }
+        emergencias.push_back(emergencia);
+    }
+
+    error.clear();
+    return ResultadoOperacion::Exito;
+}
+
+ResultadoOperacion EmergenciaRepository::listarHistorial(long long idEmergencia,
+                                                         std::vector<CambioEmergencia>& historial,
+                                                         std::string& error) const {
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        error = "La base de datos no está disponible";
+        return ResultadoOperacion::ErrorInterno;
+    }
+
+    if (!existeEn("SELECT 1 FROM emergencias WHERE id_emergencia = ? LIMIT 1;", idEmergencia)) {
+        error = "No existe la emergencia " + std::to_string(idEmergencia);
+        return ResultadoOperacion::NoEncontrado;
+    }
+
+    // ?1 es el mismo parámetro en las tres posiciones: se enlaza una sola vez.
+    // Los valores de tabla_afectada son los que escriben crear(), transicionar()
+    // y registrarAccion() en este mismo archivo.
+    sqlite3_stmt* sentencia = nullptr;
+    if (!preparar(conexion,
+                  "SELECT l.id_log, l.id_usuario, COALESCE(u.nombre, ''), l.accion, l.tabla_afectada, "
+                  "l.id_registro, l.detalle_cambio, l.fecha_modificacion "
+                  "FROM logs_auditoria l "
+                  "LEFT JOIN usuarios u ON u.id_usuario = l.id_usuario "
+                  "WHERE (l.tabla_afectada = 'emergencias' AND l.id_registro = ?1) "
+                  "OR (l.tabla_afectada = 'acciones_emergencia' AND l.id_registro IN "
+                  "(SELECT id_accion FROM acciones_emergencia WHERE id_emergencia = ?1)) "
+                  "ORDER BY l.fecha_modificacion DESC, l.id_log DESC;",
+                  &sentencia, error)) {
+        return ResultadoOperacion::ErrorInterno;
+    }
+    sqlite3_bind_int64(sentencia, 1, idEmergencia);
+
+    historial.clear();
+    while (sqlite3_step(sentencia) == SQLITE_ROW) {
+        CambioEmergencia cambio;
+        cambio.idLog = sqlite3_column_int64(sentencia, 0);
+        cambio.idUsuario = sqlite3_column_int64(sentencia, 1);
+        cambio.nombreUsuario = leerTexto(sentencia, 2);
+        cambio.accion = leerTexto(sentencia, 3);
+        cambio.tablaAfectada = leerTexto(sentencia, 4);
+        if (sqlite3_column_type(sentencia, 5) != SQLITE_NULL) {
+            cambio.idRegistro = sqlite3_column_int64(sentencia, 5);
+        }
+        cambio.detalleCambio = leerTexto(sentencia, 6);
+        cambio.fechaModificacion = leerTexto(sentencia, 7);
+        historial.push_back(cambio);
+    }
+    sqlite3_finalize(sentencia);
+
+    error.clear();
+    return ResultadoOperacion::Exito;
+}

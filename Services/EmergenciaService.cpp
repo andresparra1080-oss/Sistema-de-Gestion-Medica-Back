@@ -334,3 +334,109 @@ ResultadoOperacion EmergenciaService::eliminar(long long idEmergencia,
     mensaje = "Emergencia eliminada";
     return ResultadoOperacion::Exito;
 }
+
+// ---------------------------------------------------------------------
+// KAN-48, KAN-52 y KAN-54: consultas de emergencias
+// ---------------------------------------------------------------------
+namespace {
+
+// Para LEER emergencias. Capitán y Médico Principal ven las emergencias activas
+// en el panel (RF-29): si su rol no tiene GESTIONAR_EMERGENCIAS, basta con una
+// cuenta activa. Si el equipo decide exigir el permiso también para leer,
+// cambiar a true.
+const bool EXIGIR_PERMISO_PARA_LEER = false;
+
+ResultadoOperacion autorizarLector(const std::string& correoUsuario,
+                                   const EmergenciaRepository& repository,
+                                   std::string& mensaje) {
+    UsuarioRepository usuarios;
+
+    const long long idUsuario = usuarios.obtenerIdPorCorreo(correoUsuario);
+    if (idUsuario <= 0) {
+        mensaje = "La cuenta que realiza la consulta ya no está activa";
+        return ResultadoOperacion::Conflicto;
+    }
+
+    if (EXIGIR_PERMISO_PARA_LEER && !repository.usuarioPuedeGestionarEmergencias(idUsuario)) {
+        mensaje = "Acceso denegado: su rol no puede consultar emergencias";
+        return ResultadoOperacion::SinPermiso;
+    }
+
+    return ResultadoOperacion::Exito;
+}
+
+}  // namespace
+
+ResultadoOperacion EmergenciaService::obtener(long long idEmergencia,
+                                              const std::string& correoUsuario,
+                                              Emergencia& emergencia,
+                                              std::string& mensaje) const {
+    EmergenciaRepository repository;
+
+    const ResultadoOperacion autorizacion = autorizarLector(correoUsuario, repository, mensaje);
+    if (autorizacion != ResultadoOperacion::Exito) {
+        return autorizacion;
+    }
+
+    if (!identificadorValido(idEmergencia, mensaje)) {
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    std::string error;
+    const ResultadoOperacion resultado = repository.obtener(idEmergencia, emergencia, error);
+    if (resultado != ResultadoOperacion::Exito) {
+        mensaje = error.empty() ? "No se pudo consultar la emergencia" : error;
+        return resultado;
+    }
+
+    mensaje = "Detalle de la emergencia";
+    return ResultadoOperacion::Exito;
+}
+
+ResultadoOperacion EmergenciaService::listar(bool soloActivas,
+                                             const std::string& correoUsuario,
+                                             std::vector<Emergencia>& emergencias,
+                                             std::string& mensaje) const {
+    EmergenciaRepository repository;
+
+    const ResultadoOperacion autorizacion = autorizarLector(correoUsuario, repository, mensaje);
+    if (autorizacion != ResultadoOperacion::Exito) {
+        return autorizacion;
+    }
+
+    std::string error;
+    const ResultadoOperacion resultado = repository.listar(soloActivas, emergencias, error);
+    if (resultado != ResultadoOperacion::Exito) {
+        mensaje = error.empty() ? "No se pudo consultar la lista de emergencias" : error;
+        return resultado;
+    }
+
+    mensaje = soloActivas ? "Emergencias activas" : "Emergencias";
+    return ResultadoOperacion::Exito;
+}
+
+ResultadoOperacion EmergenciaService::listarHistorial(long long idEmergencia,
+                                                      const std::string& correoUsuario,
+                                                      std::vector<CambioEmergencia>& historial,
+                                                      std::string& mensaje) const {
+    EmergenciaRepository repository;
+
+    const ResultadoOperacion autorizacion = autorizarLector(correoUsuario, repository, mensaje);
+    if (autorizacion != ResultadoOperacion::Exito) {
+        return autorizacion;
+    }
+
+    if (!identificadorValido(idEmergencia, mensaje)) {
+        return ResultadoOperacion::DatosInvalidos;
+    }
+
+    std::string error;
+    const ResultadoOperacion resultado = repository.listarHistorial(idEmergencia, historial, error);
+    if (resultado != ResultadoOperacion::Exito) {
+        mensaje = error.empty() ? "No se pudo consultar el historial de la emergencia" : error;
+        return resultado;
+    }
+
+    mensaje = "Historial de la emergencia";
+    return ResultadoOperacion::Exito;
+}
