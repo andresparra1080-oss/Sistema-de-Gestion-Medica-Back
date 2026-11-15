@@ -5,6 +5,7 @@
 
 #include "Cross/ResultadoOperacion.h"
 #include "Models/AccionEmergencia.h"
+#include "Models/CambioEmergencia.h"
 #include "Models/Emergencia.h"
 #include "Repositories/EmergenciaRepository.h"
 
@@ -53,4 +54,27 @@ public:
     ResultadoOperacion eliminar(long long idEmergencia,
                                  const std::string& correoUsuario,
                                  std::string& mensaje) const;
+
+    // ---- Consultas (KAN-48, KAN-52, KAN-54) ----
+    // `correoUsuario` sale del token. Basta una cuenta activa (ver
+    // EXIGIR_PERMISO_PARA_LEER en EmergenciaService.cpp).
+
+    // Detalle de una emergencia con sus pacientes. NoEncontrado si no existe.
+    ResultadoOperacion obtener(long long idEmergencia,
+                               const std::string& correoUsuario,
+                               Emergencia& emergencia,
+                               std::string& mensaje) const;
+
+    // Lista de emergencias, las más urgentes y recientes primero.
+    // soloActivas = true devuelve solo ACTIVA y EN_ATENCION.
+    ResultadoOperacion listar(bool soloActivas,
+                              const std::string& correoUsuario,
+                              std::vector<Emergencia>& emergencias,
+                              std::string& mensaje) const;
+
+    // Cambios de la emergencia y de sus acciones, del más reciente al más antiguo.
+    ResultadoOperacion listarHistorial(long long idEmergencia,
+                                       const std::string& correoUsuario,
+                                       std::vector<CambioEmergencia>& historial,
+                                       std::string& mensaje) const;
 };

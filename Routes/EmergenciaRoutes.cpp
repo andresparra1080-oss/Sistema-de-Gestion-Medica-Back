@@ -7,6 +7,7 @@
 
 #include "Cross/ApiHttp.h"
 #include "Models/AccionEmergencia.h"
+#include "Models/CambioEmergencia.h"
 #include "Models/Emergencia.h"
 
 namespace {
@@ -62,6 +63,19 @@ nlohmann::json aJson(const AccionEmergencia& accion) {
     json["nombre_ejecutor"] = accion.nombreEjecutor;
     json["descripcion_accion"] = accion.descripcion;
     json["fecha_hora"] = accion.fechaHora;
+    return json;
+}
+
+nlohmann::json aJson(const CambioEmergencia& cambio) {
+    nlohmann::json json;
+    json["id_log"] = cambio.idLog;
+    json["id_usuario"] = cambio.idUsuario;
+    json["nombre_usuario"] = cambio.nombreUsuario;
+    json["accion"] = cambio.accion;
+    json["tabla_afectada"] = cambio.tablaAfectada;
+    json["id_registro"] = cambio.idRegistro.has_value() ? nlohmann::json(*cambio.idRegistro) : nlohmann::json(nullptr);
+    json["detalle_cambio"] = textoONulo(cambio.detalleCambio);
+    json["fecha_modificacion"] = cambio.fechaModificacion;
     return json;
 }
 
@@ -280,8 +294,8 @@ void EmergenciaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             const ResultadoOperacion resultado =
                 emergenciaService_.listarAcciones(idEmergencia, correo, acciones, mensaje);
 
-            if (resultado != ResultadoOperacion::Exito) { 
-                                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
             }
 
             nlohmann::json lista = nlohmann::json::array();
@@ -351,6 +365,95 @@ void EmergenciaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             return ApiHttp::respuestaJson(200, cuerpo.dump());
         });
 
+    // Lista de emergencias. ?activas=true devuelve solo ACTIVA y EN_ATENCION.
+    CROW_ROUTE(app, "/api/emergencias")
+        .methods(crow::HTTPMethod::Get)([this](const crow::request& peticion) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            const char* parametroActivas = peticion.url_params.get("activas");
+            const bool soloActivas =
+                parametroActivas != nullptr &&
+                (std::string(parametroActivas) == "true" || std::string(parametroActivas) == "1");
+
+            std::vector<Emergencia> emergencias;
+            std::string mensaje;
+            const ResultadoOperacion resultado =
+                emergenciaService_.listar(soloActivas, correo, emergencias, mensaje);
+
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json lista = nlohmann::json::array();
+            for (const Emergencia& emergencia : emergencias) {
+                lista.push_back(aJson(emergencia));
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["total"] = lista.size();
+            cuerpo["emergencias"] = lista;
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
+
+    // Detalle de una emergencia con sus pacientes.
+    CROW_ROUTE(app, "/api/emergencias/<int>")
+        .methods(crow::HTTPMethod::Get)([this](const crow::request& peticion, int idEmergencia) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            Emergencia emergencia;
+            std::string mensaje;
+            const ResultadoOperacion resultado =
+                emergenciaService_.obtener(idEmergencia, correo, emergencia, mensaje);
+
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["emergencia"] = aJson(emergencia);
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
+
+    // Historial de cambios de la emergencia (KAN-54).
+    CROW_ROUTE(app, "/api/emergencias/<int>/historial")
+        .methods(crow::HTTPMethod::Get)([this](const crow::request& peticion, int idEmergencia) {
+            std::string correo;
+            std::string rol;
+            if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
+                return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            std::vector<CambioEmergencia> historial;
+            std::string mensaje;
+            const ResultadoOperacion resultado =
+                emergenciaService_.listarHistorial(idEmergencia, correo, historial, mensaje);
+
+            if (resultado != ResultadoOperacion::Exito) {
+                return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
+            }
+
+            nlohmann::json lista = nlohmann::json::array();
+            for (const CambioEmergencia& cambio : historial) {
+                lista.push_back(aJson(cambio));
+            }
+
+            nlohmann::json cuerpo;
+            cuerpo["success"] = true;
+            cuerpo["total"] = lista.size();
+            cuerpo["historial"] = lista;
+            return ApiHttp::respuestaJson(200, cuerpo.dump());
+        });
+
     CROW_ROUTE(app, "/api/emergencias/<int>")
         .methods(crow::HTTPMethod::Delete)([this](const crow::request& peticion, int idEmergencia) {
             std::string correo;
@@ -373,4 +476,3 @@ void EmergenciaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             return ApiHttp::respuestaJson(200, cuerpo.dump());
         });
 }
-                
