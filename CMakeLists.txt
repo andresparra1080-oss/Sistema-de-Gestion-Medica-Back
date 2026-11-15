@@ -13,17 +13,30 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin")
 
 include(FetchContent)
 
-# --- SQLite3: Enlace local robusto (fallback automático) ---
+# --- SQLite3 ---
+# 1) SQLite instalado en el sistema (CMake lo expone como SQLite::SQLite3)
+# 2) Si el sistema no lo tiene, se compila el de Database/sqlite3/ (fallback local)
+# En todos los casos el proyecto enlaza contra SQLite3::SQLite3.
 if(NOT TARGET SQLite3::SQLite3)
     find_package(SQLite3 QUIET)
-    if(NOT SQLite3_FOUND)
-        if(EXISTS "${CMAKE_SOURCE_DIR}/Database/sqlite3/sqlite3.c")
-            add_library(sqlite3_static STATIC Database/sqlite3/sqlite3.c)
-            target_include_directories(sqlite3_static PUBLIC Database/sqlite3)
-            add_library(SQLite3::SQLite3 ALIAS sqlite3_static)
-        else()
-            message(FATAL_ERROR "No se encontró SQLite3 en el sistema ni los archivos locales en Database/sqlite3/")
-        endif()
+
+    if(TARGET SQLite::SQLite3)
+        add_library(SQLite3::SQLite3 ALIAS SQLite::SQLite3)
+    elseif(SQLite3_FOUND)
+        find_path(SQLite3_INCLUDE_DIR NAMES sqlite3.h REQUIRED)
+        find_library(SQLite3_LIBRARY NAMES sqlite3 REQUIRED)
+
+        add_library(SQLite3::SQLite3 UNKNOWN IMPORTED)
+        set_target_properties(SQLite3::SQLite3 PROPERTIES
+            IMPORTED_LOCATION "${SQLite3_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIR}"
+        )
+    elseif(EXISTS "${CMAKE_SOURCE_DIR}/Database/sqlite3/sqlite3.c")
+        add_library(sqlite3_static STATIC Database/sqlite3/sqlite3.c)
+        target_include_directories(sqlite3_static PUBLIC Database/sqlite3)
+        add_library(SQLite3::SQLite3 ALIAS sqlite3_static)
+    else()
+        message(FATAL_ERROR "No se encontró SQLite3 en el sistema ni los archivos locales en Database/sqlite3/")
     endif()
 endif()
 

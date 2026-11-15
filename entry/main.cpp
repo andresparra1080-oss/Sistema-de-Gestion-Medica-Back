@@ -12,19 +12,23 @@
 #include "Cross/ApiHttp.h"
 #include "Cross/Config.h"
 #include "Database/SQLite.h"
+#include "Routes/AlertaRoutes.h"
 #include "Routes/AuthRoutes.h"
 #include "Routes/EmergenciaRoutes.h"
 #include "Routes/HistoriaRoutes.h"
 #include "Routes/InventarioRoutes.h"
 #include "Routes/MovimientoRoutes.h"
 #include "Routes/PacienteRoutes.h"
+#include "Routes/ProtocoloRoutes.h"
 #include "Routes/TratamientoRoutes.h"
+#include "Services/AlertaService.h"
 #include "Services/AuthService.h"
 #include "Services/EmergenciaService.h"
 #include "Services/HistoriaService.h"
 #include "Services/InventarioService.h"
 #include "Services/MovimientoService.h"
 #include "Services/PacienteService.h"
+#include "Services/ProtocoloService.h"
 #include "Services/TratamientoService.h"
 
 int main()
@@ -79,6 +83,14 @@ int main()
     EmergenciaService servicioEmergencias;
     EmergenciaRoutes rutasEmergencias(servicioEmergencias);
     rutasEmergencias.registrarRutas(aplicacion);
+
+    ProtocoloService servicioProtocolos;
+    ProtocoloRoutes rutasProtocolos(servicioProtocolos);
+    rutasProtocolos.registrarRutas(aplicacion);
+
+    AlertaService servicioAlertas;
+    AlertaRoutes rutasAlertas(servicioAlertas);
+    rutasAlertas.registrarRutas(aplicacion);
 
     HistoriaService servicioHistorias;
     HistoriaRoutes rutasHistorias(servicioHistorias);
