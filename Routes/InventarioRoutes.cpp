@@ -11,6 +11,12 @@
 
 namespace {
 
+bool puedeConsultarInventario(const std::string& correo) {
+    UsuarioRepository usuarios;
+    return usuarios.tienePermiso(correo, "GESTIONAR_INVENTARIO") ||
+           usuarios.tienePermiso(correo, "VER_REPORTES");
+}
+
 nlohmann::json aJson(const Lote& lote) {
     nlohmann::json json;
     json["id_lote"] = lote.getIdLote();
@@ -66,9 +72,8 @@ void InventarioRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
-            UsuarioRepository usuarios;
-            if (!usuarios.tienePermiso(correo, "GESTIONAR_INVENTARIO")) {
-                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede gestionar inventario");
+            if (!puedeConsultarInventario(correo)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede consultar inventario ni reportes");
             }
 
             std::vector<Medicamento> medicamentos;

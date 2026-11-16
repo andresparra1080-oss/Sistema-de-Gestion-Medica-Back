@@ -138,6 +138,7 @@ if(HEARTMED_CPP_SOURCES STREQUAL "")
 endif()
 
 list(SORT HEARTMED_CPP_SOURCES)
+list(FILTER HEARTMED_CPP_SOURCES EXCLUDE REGEX ".*/tmp_test\\.cpp$")
 
 add_executable(heartmed-backend
     ${HEARTMED_CPP_SOURCES}

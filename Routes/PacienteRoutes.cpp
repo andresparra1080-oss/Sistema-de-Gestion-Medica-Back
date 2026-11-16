@@ -7,74 +7,13 @@
 
 #include "Cross/ApiHttp.h"
 #include "Models/Paciente.h"
+#include "Repositories/UsuarioRepository.h"
 
 namespace {
 
-std::string normalizarRol(const std::string& rol) {
-    std::string salida;
-    salida.reserve(rol.size());
-
-    for (unsigned char c : rol) {
-        switch (c) {
-            case 0xC1: case 0xE1: salida += 'a'; break; // Á / á
-            case 0xC9: case 0xE9: salida += 'e'; break; // É / é
-            case 0xCD: case 0xED: salida += 'i'; break; // Í / í
-            case 0xD3: case 0xF3: salida += 'o'; break; // Ó / ó
-            case 0xDA: case 0xFA: salida += 'u'; break; // Ú / ú
-            case 0xDC: case 0xFC: salida += 'u'; break; // Ü / ü
-            default:
-                if (std::isalnum(c) || c == '/' || c == '-' || c == ' ') {
-                    salida.push_back(static_cast<char>(std::tolower(c)));
-                }
-                break;
-        }
-    }
-
-    std::string limpio;
-    limpio.reserve(salida.size());
-    for (char c : salida) {
-        if (c == ' ' && (!limpio.empty() && limpio.back() == ' ')) {
-            continue;
-        }
-        limpio.push_back(c);
-    }
-
-    return limpio;
-}
-
-std::string canonizarRol(const std::string& rol) {
-    std::string normalizado = normalizarRol(rol);
-    for (char& c : normalizado) {
-        if (c == '/' || c == '-' || c == '_') {
-            c = ' ';
-        }
-    }
-
-    std::string limpio;
-    limpio.reserve(normalizado.size());
-    bool anteriorEspacio = false;
-    for (char c : normalizado) {
-        if (c == ' ') {
-            if (!limpio.empty() && !anteriorEspacio) {
-                limpio.push_back(' ');
-            }
-            anteriorEspacio = true;
-            continue;
-        }
-
-        limpio.push_back(c);
-        anteriorEspacio = false;
-    }
-
-    return limpio;
-}
-
-bool tienePermisoPaciente(const std::string& rol) {
-    const std::string rolNormalizado = canonizarRol(rol);
-    return rolNormalizado == "capitan" ||
-           rolNormalizado == "capitan medico principal" ||
-           rolNormalizado == "cirujano" ||
-           rolNormalizado == "cirujano naval";
+bool tienePermisoPaciente(const std::string& correo) {
+    UsuarioRepository usuarios;
+    return usuarios.tienePermiso(correo, "GESTIONAR_PACIENTES");
 }
 
 nlohmann::json aJson(const Paciente& paciente) {
@@ -169,6 +108,10 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
+            if (!tienePermisoPaciente(correo)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede consultar pacientes");
+            }
+
             std::vector<Paciente> pacientes;
             std::string mensaje;
             const ResultadoOperacion resultado = pacienteService_.listar(pacientes, mensaje);
@@ -196,8 +139,8 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
-            if (!tienePermisoPaciente(rol)) {
-                return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden registrar pacientes");
+            if (!tienePermisoPaciente(correo)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede registrar pacientes");
             }
 
             Paciente datos;
@@ -249,8 +192,8 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
-            if (!tienePermisoPaciente(rol)) {
-                return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden modificar pacientes");
+            if (!tienePermisoPaciente(correo)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede modificar pacientes");
             }
 
             Paciente datos;
@@ -281,8 +224,8 @@ void PacienteRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
-            if (!tienePermisoPaciente(rol)) {
-                return ApiHttp::respuestaError(403, "Acceso denegado: Solo Capitán y Cirujano pueden eliminar pacientes");
+            if (!tienePermisoPaciente(correo)) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede eliminar pacientes");
             }
 
             std::string mensaje;
