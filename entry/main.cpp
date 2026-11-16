@@ -13,6 +13,7 @@
 #include "Cross/Config.h"
 #include "Database/SQLite.h"
 #include "Routes/AlertaRoutes.h"
+#include "Routes/AuditoriaRoutes.h"
 #include "Routes/AuthRoutes.h"
 #include "Routes/EmergenciaRoutes.h"
 #include "Routes/HistoriaRoutes.h"
@@ -22,6 +23,7 @@
 #include "Routes/ProtocoloRoutes.h"
 #include "Routes/TratamientoRoutes.h"
 #include "Services/AlertaService.h"
+#include "Services/AuditoriaService.h"
 #include "Services/AuthService.h"
 #include "Services/EmergenciaService.h"
 #include "Services/HistoriaService.h"
@@ -99,6 +101,10 @@ int main()
     TratamientoService servicioTratamientos;
     TratamientoRoutes rutasTratamientos(servicioTratamientos);
     rutasTratamientos.registrarRutas(aplicacion);
+
+    AuditoriaService servicioAuditoria;
+    AuditoriaRoutes rutasAuditoria(servicioAuditoria);
+    rutasAuditoria.registrarRutas(aplicacion);
 
     CROW_ROUTE(aplicacion, "/health")([]()
                                       {

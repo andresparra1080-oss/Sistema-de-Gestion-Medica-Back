@@ -28,7 +28,6 @@ public:
     bool buscarPorPaciente(long long idPaciente, HistoriaClinica& historia, std::string& error) const;
     // Aplica solo los campos presentes. Si vienen alergias, reemplaza la lista
     // entera por la recibida.
-    bool actualizar(long long idHistoria, const CambiosHistoria& cambios, std::string& error) const;
-    // Elimina la historia clínica de un paciente, tras borrar sus alergias.
-    bool eliminarPorPaciente(long long idPaciente, std::string& error) const;
+    bool actualizar(long long idHistoria, long long idUsuario,const CambiosHistoria& cambios, std::string& error) const;
+    bool eliminarPorPaciente(long long idPaciente, long long idUsuario, std::string& error) const;
 };

@@ -183,7 +183,7 @@ void HistoriaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             HistoriaClinica actualizada;
             std::string mensaje;
             const ResultadoOperacion resultado =
-                historiaService_.actualizar(idPaciente, cambios, actualizada, mensaje);
+                historiaService_.actualizar(idPaciente, cambios, correo, actualizada, mensaje);
 
             if (resultado != ResultadoOperacion::Exito) {
                 return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
@@ -205,7 +205,7 @@ void HistoriaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             }
 
             std::string mensaje;
-            const ResultadoOperacion resultado = historiaService_.eliminar(idPaciente, mensaje);
+            const ResultadoOperacion resultado = historiaService_.eliminar(idPaciente, correo, mensaje);
             if (resultado != ResultadoOperacion::Exito) {
                 return ApiHttp::respuestaError(ApiHttp::codigoHttpDe(resultado), mensaje);
             }

@@ -112,6 +112,14 @@ foreach(dir IN LISTS HEARTMED_SOURCE_DIRS)
     list(APPEND HEARTMED_CPP_SOURCES ${dir_sources})
 endforeach()
 
+# Módulo de Auditoría (explícito)
+list(APPEND HEARTMED_CPP_SOURCES
+    ${CMAKE_SOURCE_DIR}/Repositories/AuditoriaRepository.cpp
+    ${CMAKE_SOURCE_DIR}/Services/AuditoriaService.cpp
+    ${CMAKE_SOURCE_DIR}/Routes/AuditoriaRoutes.cpp
+)
+list(REMOVE_DUPLICATES HEARTMED_CPP_SOURCES)
+
 if(HEARTMED_CPP_SOURCES STREQUAL "")
     message(FATAL_ERROR "No se encontró ningún archivo .cpp en los módulos del proyecto. Revisa la estructura del repositorio.")
 endif()

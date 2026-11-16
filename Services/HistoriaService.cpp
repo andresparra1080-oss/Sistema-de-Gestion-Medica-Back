@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "Repositories/UsuarioRepository.h"
+
 namespace {
 
 // Topes de texto. observaciones comparte el de PUT /api/pacientes, que escribe
@@ -71,8 +73,17 @@ ResultadoOperacion HistoriaService::consultar(long long idPaciente,
 
 ResultadoOperacion HistoriaService::actualizar(long long idPaciente,
                                                const CambiosHistoria& cambios,
+                                               const std::string& correoUsuario,
                                                HistoriaClinica& actualizada,
                                                std::string& mensaje) const {
+    // Quién modifica, para dejarlo en la auditoría (igual que emergencias).
+    UsuarioRepository usuarios;
+    const long long idUsuario = usuarios.obtenerIdPorCorreo(correoUsuario);
+    if (idUsuario <= 0) {
+        mensaje = "La cuenta que modifica la historia clínica ya no está activa";
+        return ResultadoOperacion::Conflicto;
+    }
+
     HistoriaClinica actual;
     const ResultadoOperacion existente = consultar(idPaciente, actual, mensaje);
     if (existente != ResultadoOperacion::Exito) {
@@ -168,7 +179,7 @@ ResultadoOperacion HistoriaService::actualizar(long long idPaciente,
     }
 
     std::string error;
-    if (!repository.actualizar(actual.getIdHistoria(), limpios, error)) {
+    if (!repository.actualizar(actual.getIdHistoria(), idUsuario, limpios, error)) {
         if (error.find("UNIQUE") != std::string::npos) {
             mensaje = "Hay dos alergias con la misma sustancia";
             return ResultadoOperacion::Duplicado;
@@ -190,7 +201,15 @@ ResultadoOperacion HistoriaService::actualizar(long long idPaciente,
 }
 
 ResultadoOperacion HistoriaService::eliminar(long long idPaciente,
+                                            const std::string& correoUsuario,
                                             std::string& mensaje) const {
+    UsuarioRepository usuarios;
+    const long long idUsuario = usuarios.obtenerIdPorCorreo(correoUsuario);
+    if (idUsuario <= 0) {
+        mensaje = "La cuenta que elimina la historia clínica ya no está activa";
+        return ResultadoOperacion::Conflicto;
+    }
+
     if (idPaciente <= 0) {
         mensaje = "El identificador del paciente no es válido";
         return ResultadoOperacion::DatosInvalidos;
@@ -203,7 +222,7 @@ ResultadoOperacion HistoriaService::eliminar(long long idPaciente,
     }
 
     std::string error;
-    if (!repository.eliminarPorPaciente(idPaciente, error)) {
+    if (!repository.eliminarPorPaciente(idPaciente, idUsuario, error)) {
         if (error.find("FOREIGN KEY") != std::string::npos ||
             error.find("fk_") != std::string::npos ||
             error.find("constraint") != std::string::npos) {
