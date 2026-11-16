@@ -33,6 +33,14 @@ std::string aMayusculas(const std::string& valor) {
     return resultado;
 }
 
+// Detecta el error del trigger de alergias ("El paciente es alérgico a
+// este medicamento"), con o sin tilde.
+bool esErrorAlergia(const std::string& error) {
+    return error.find("lérgic") != std::string::npos ||
+           error.find("lergic") != std::string::npos ||
+           error.find("rgico a este medicamento") != std::string::npos;
+}
+
 // Comprueba que la fecha tenga el formato YYYY-MM-DD.
 // La base de datos también valida que sea una fecha real.
 bool esFechaISO(const std::string& fecha) {
@@ -238,8 +246,7 @@ ResultadoOperacion TratamientoService::registrar(
     TratamientoRepository repository;
 
     if (!repository.crear(nuevo, idGenerado, error)) {
-        if (error.find("alerg") != std::string::npos ||
-            error.find("Alerg") != std::string::npos) {
+        if (esErrorAlergia(error)) {
             mensaje = error;
             return ResultadoOperacion::Conflicto;
         }
@@ -303,6 +310,11 @@ ResultadoOperacion TratamientoService::actualizar(
     }
 
     if (!repository.actualizar(actualizado, error)) {
+        if (esErrorAlergia(error)) {
+            mensaje = error;
+            return ResultadoOperacion::Conflicto;
+        }
+
         mensaje = error.empty()
             ? "No se pudo actualizar el tratamiento"
             : error;

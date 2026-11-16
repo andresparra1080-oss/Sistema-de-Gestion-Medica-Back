@@ -9,6 +9,17 @@
 
 namespace {
 
+// Lee un campo de texto opcional: si falta o viene como null se trata
+// como vacío. Si trae otro tipo que no sea texto, lanza type_error.
+std::string textoOpcional(const nlohmann::json& cuerpo,
+                          const char* campo) {
+    if (!cuerpo.contains(campo) || cuerpo[campo].is_null()) {
+        return "";
+    }
+
+    return cuerpo[campo].get<std::string>();
+}
+
 nlohmann::json aJson(const Tratamiento& tratamiento) {
     nlohmann::json json;
 
@@ -59,10 +70,10 @@ bool leerCuerpo(const std::string& texto, Tratamiento& datos,
 
         datos.setIdPaciente(cuerpo.value("id_paciente", 0LL));
         datos.setIdMedicamento(cuerpo.value("id_medicamento", 0LL));
-        datos.setDosis(cuerpo.value("dosis", ""));
-        datos.setFrecuencia(cuerpo.value("frecuencia", ""));
-        datos.setFechaInicio(cuerpo.value("fecha_inicio", ""));
-        datos.setFechaFin(cuerpo.value("fecha_fin", ""));
+        datos.setDosis(textoOpcional(cuerpo, "dosis"));
+        datos.setFrecuencia(textoOpcional(cuerpo, "frecuencia"));
+        datos.setFechaInicio(textoOpcional(cuerpo, "fecha_inicio"));
+        datos.setFechaFin(textoOpcional(cuerpo, "fecha_fin"));
 
         if (cuerpo.contains("intervalo_horas") &&
             !cuerpo["intervalo_horas"].is_null()) {

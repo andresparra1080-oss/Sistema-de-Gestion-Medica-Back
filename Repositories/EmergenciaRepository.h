@@ -60,12 +60,6 @@ public:
                                  Emergencia& actualizada,
                                  std::string& error) const;
 
-    // Elimina una emergencia ya cerrada, además de su alerta asociada. Las
-    // relaciones con pacientes y acciones se borran por CASCADE.
-    ResultadoOperacion eliminar(long long idEmergencia,
-                                long long idUsuario,
-                                std::string& error) const;
-
     // ---- Consultas (KAN-48, KAN-52, KAN-54) ----
     // Devuelven Exito, NoEncontrado (la emergencia no existe) o ErrorInterno.
 

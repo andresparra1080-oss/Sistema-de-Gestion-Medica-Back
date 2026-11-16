@@ -13,7 +13,6 @@
 //   GET    /api/emergencias/{id}/acciones    historial de acciones
 //   PUT    /api/emergencias/{id}/estado      ACTIVA -> EN_ATENCION
 //   PUT    /api/emergencias/{id}/finalizar   -> FINALIZADA
-//   DELETE /api/emergencias/{id}             eliminar (solo FINALIZADA)
 class EmergenciaRoutes {
 public:
     explicit EmergenciaRoutes(EmergenciaService& emergenciaService);

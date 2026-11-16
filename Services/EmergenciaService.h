@@ -50,11 +50,6 @@ public:
                                  Emergencia& actualizada,
                                  std::string& mensaje) const;
 
-    // Elimina una emergencia cerrada bajo permiso de gestión.
-    ResultadoOperacion eliminar(long long idEmergencia,
-                                 const std::string& correoUsuario,
-                                 std::string& mensaje) const;
-
     // ---- Consultas (KAN-48, KAN-52, KAN-54) ----
     // `correoUsuario` sale del token. Basta una cuenta activa (ver
     // EXIGIR_PERMISO_PARA_LEER en EmergenciaService.cpp).

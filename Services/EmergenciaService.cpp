@@ -309,32 +309,6 @@ ResultadoOperacion EmergenciaService::finalizar(long long idEmergencia,
     return ResultadoOperacion::Exito;
 }
 
-ResultadoOperacion EmergenciaService::eliminar(long long idEmergencia,
-                                              const std::string& correoUsuario,
-                                              std::string& mensaje) const {
-    EmergenciaRepository repository;
-
-    long long idUsuario = 0;
-    const ResultadoOperacion autorizacion = autorizarGestor(correoUsuario, repository, idUsuario, mensaje);
-    if (autorizacion != ResultadoOperacion::Exito) {
-        return autorizacion;
-    }
-
-    if (!identificadorValido(idEmergencia, mensaje)) {
-        return ResultadoOperacion::DatosInvalidos;
-    }
-
-    std::string error;
-    const ResultadoOperacion resultado = repository.eliminar(idEmergencia, idUsuario, error);
-    if (resultado != ResultadoOperacion::Exito) {
-        mensaje = error.empty() ? "No se pudo eliminar la emergencia" : error;
-        return resultado;
-    }
-
-    mensaje = "Emergencia eliminada";
-    return ResultadoOperacion::Exito;
-}
-
 // ---------------------------------------------------------------------
 // KAN-48, KAN-52 y KAN-54: consultas de emergencias
 // ---------------------------------------------------------------------
