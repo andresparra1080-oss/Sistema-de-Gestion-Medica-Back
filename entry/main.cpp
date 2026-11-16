@@ -32,6 +32,8 @@
 #include "Services/PacienteService.h"
 #include "Services/ProtocoloService.h"
 #include "Services/TratamientoService.h"
+#include "Routes/LoteRoutes.h"
+#include "Services/LoteService.h"
 
 int main()
 {
@@ -77,6 +79,10 @@ int main()
     InventarioService servicioInventario;
     InventarioRoutes rutasInventario(servicioInventario);
     rutasInventario.registrarRutas(aplicacion);
+    
+    LoteService servicioLotes;
+    LoteRoutes rutasLotes(servicioLotes);
+    rutasLotes.registrarRutas(aplicacion);
 
     MovimientoService servicioMovimientos;
     MovimientoRoutes rutasMovimientos(servicioMovimientos);
