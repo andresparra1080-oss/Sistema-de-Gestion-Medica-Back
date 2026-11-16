@@ -34,6 +34,7 @@
 #include "Services/TratamientoService.h"
 #include "Routes/LoteRoutes.h"
 #include "Services/LoteService.h"
+#include "Services/AlertaVencimientoService.h"
 
 int main()
 {
@@ -127,6 +128,14 @@ int main()
     respuesta["database"] = Configuracion::instancia().obtenerCadena("DB_NAME", "heartmed_db");
     return ApiHttp::respuestaJson(200, respuesta.dump()); });
 
+        AlertaVencimientoService servicioVencimientos;
+
+    if (!servicioVencimientos.iniciar(rutaBaseDatos)) {
+        std::cerr
+            << "No se pudo iniciar el servicio de vencimientos"
+            << std::endl;
+        return 1;
+    }
     aplicacion.port(puerto).multithreaded().run();
 
     return 0;
