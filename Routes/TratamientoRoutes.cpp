@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Cross/ApiHttp.h"
+#include "Repositories/UsuarioRepository.h"
 
 namespace {
 
@@ -101,6 +102,11 @@ void TratamientoRoutes::registrarRutas(
             return ApiHttp::respuestaError(401, "Token ausente o inválido");
         }
 
+        UsuarioRepository usuarios;
+        if (!usuarios.tienePermiso(correo, "PRESCRIBIR_TRATAMIENTOS")) {
+            return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede gestionar tratamientos");
+        }
+
         std::vector<Tratamiento> tratamientos;
         std::string mensaje;
 
@@ -136,6 +142,11 @@ void TratamientoRoutes::registrarRutas(
 
         if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
             return ApiHttp::respuestaError(401, "Token ausente o inválido");
+        }
+
+        UsuarioRepository usuarios;
+        if (!usuarios.tienePermiso(correo, "PRESCRIBIR_TRATAMIENTOS")) {
+            return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede consultar tratamientos");
         }
 
         std::vector<Tratamiento> tratamientos;
@@ -174,6 +185,11 @@ void TratamientoRoutes::registrarRutas(
 
         if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
             return ApiHttp::respuestaError(401, "Token ausente o inválido");
+        }
+
+        UsuarioRepository usuarios;
+        if (!usuarios.tienePermiso(correo, "PRESCRIBIR_TRATAMIENTOS")) {
+            return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede registrar tratamientos");
         }
 
         Tratamiento datos;
@@ -215,6 +231,11 @@ void TratamientoRoutes::registrarRutas(
             return ApiHttp::respuestaError(401, "Token ausente o inválido");
         }
 
+        UsuarioRepository usuarios;
+        if (!usuarios.tienePermiso(correo, "PRESCRIBIR_TRATAMIENTOS")) {
+            return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede actualizar tratamientos");
+        }
+
         Tratamiento datos;
         std::string error;
 
@@ -251,6 +272,11 @@ void TratamientoRoutes::registrarRutas(
 
         if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
             return ApiHttp::respuestaError(401, "Token ausente o inválido");
+        }
+
+        UsuarioRepository usuarios;
+        if (!usuarios.tienePermiso(correo, "PRESCRIBIR_TRATAMIENTOS")) {
+            return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede cambiar estados de tratamientos");
         }
 
         try {
@@ -299,6 +325,11 @@ void TratamientoRoutes::registrarRutas(
 
         if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
             return ApiHttp::respuestaError(401, "Token ausente o inválido");
+        }
+
+        UsuarioRepository usuarios;
+        if (!usuarios.tienePermiso(correo, "PRESCRIBIR_TRATAMIENTOS")) {
+            return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede eliminar tratamientos");
         }
 
         std::string mensaje;

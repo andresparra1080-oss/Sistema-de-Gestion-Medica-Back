@@ -84,6 +84,11 @@ ResultadoOperacion HistoriaService::actualizar(long long idPaciente,
         return ResultadoOperacion::Conflicto;
     }
 
+    if (!usuarios.tienePermiso(correoUsuario, "VER_HISTORIA_CLINICA")) {
+        mensaje = "Acceso denegado: su rol no puede modificar historias clínicas";
+        return ResultadoOperacion::SinPermiso;
+    }
+
     HistoriaClinica actual;
     const ResultadoOperacion existente = consultar(idPaciente, actual, mensaje);
     if (existente != ResultadoOperacion::Exito) {
@@ -208,6 +213,11 @@ ResultadoOperacion HistoriaService::eliminar(long long idPaciente,
     if (idUsuario <= 0) {
         mensaje = "La cuenta que elimina la historia clínica ya no está activa";
         return ResultadoOperacion::Conflicto;
+    }
+
+    if (!usuarios.tienePermiso(correoUsuario, "VER_HISTORIA_CLINICA")) {
+        mensaje = "Acceso denegado: su rol no puede eliminar historias clínicas";
+        return ResultadoOperacion::SinPermiso;
     }
 
     if (idPaciente <= 0) {

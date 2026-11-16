@@ -7,6 +7,7 @@
 #include "Cross/ApiHttp.h"
 #include "Models/Lote.h"
 #include "Models/Medicamento.h"
+#include "Repositories/UsuarioRepository.h"
 
 namespace {
 
@@ -65,6 +66,11 @@ void InventarioRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "GESTIONAR_INVENTARIO")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede gestionar inventario");
+            }
+
             std::vector<Medicamento> medicamentos;
             ResumenInventario resumen;
             std::string mensaje;
@@ -101,6 +107,11 @@ void InventarioRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             std::string rol;
             if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "GESTIONAR_INVENTARIO")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede gestionar inventario");
             }
 
             Medicamento datos;
@@ -142,6 +153,11 @@ void InventarioRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "GESTIONAR_INVENTARIO")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede gestionar inventario");
+            }
+
             Medicamento datos;
             nlohmann::json cuerpoPeticion;
             try {
@@ -177,6 +193,11 @@ void InventarioRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             std::string rol;
             if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "GESTIONAR_INVENTARIO")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede gestionar inventario");
             }
 
             std::string mensaje;

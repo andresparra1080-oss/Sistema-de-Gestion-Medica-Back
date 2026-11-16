@@ -114,6 +114,39 @@ bool UsuarioRepository::usuarioActivo(const std::string& email) const {
     return resultado == SQLITE_ROW;
 }
 
+bool UsuarioRepository::tienePermiso(const std::string& email, const std::string& codigoPermiso) const {
+    const std::string correo = limpiarTexto(email);
+    const std::string permiso = limpiarTexto(codigoPermiso);
+    if (correo.empty() || permiso.empty()) {
+        return false;
+    }
+
+    sqlite3* conexion = BaseDatosSqlite::instancia().obtenerConexion();
+    if (conexion == nullptr || !BaseDatosSqlite::instancia().estaAbierta()) {
+        return false;
+    }
+
+    const std::string sql =
+        "SELECT 1 "
+        "FROM usuarios u "
+        "JOIN rol_permiso rp ON rp.id_rol = u.id_rol "
+        "JOIN permisos p ON p.id_permiso = rp.id_permiso "
+        "WHERE LOWER(u.correo) = LOWER(?) AND u.activo = 1 AND UPPER(p.cod_acceso) = UPPER(?) "
+        "LIMIT 1;";
+
+    sqlite3_stmt* sentencia = nullptr;
+    if (sqlite3_prepare_v2(conexion, sql.c_str(), -1, &sentencia, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
+    sqlite3_bind_text(sentencia, 1, correo.c_str(), static_cast<int>(correo.size()), SQLITE_TRANSIENT);
+    sqlite3_bind_text(sentencia, 2, permiso.c_str(), static_cast<int>(permiso.size()), SQLITE_TRANSIENT);
+
+    const int resultado = sqlite3_step(sentencia);
+    sqlite3_finalize(sentencia);
+    return resultado == SQLITE_ROW;
+}
+
 bool UsuarioRepository::existeUsuario(const std::string& email) const {
     const std::string correo = limpiarTexto(email);
     if (correo.empty()) {

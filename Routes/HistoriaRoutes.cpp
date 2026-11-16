@@ -7,6 +7,7 @@
 #include "Cross/ApiHttp.h"
 #include "Models/Alergia.h"
 #include "Models/HistoriaClinica.h"
+#include "Repositories/UsuarioRepository.h"
 
 namespace {
 
@@ -152,6 +153,11 @@ void HistoriaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
             }
 
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "VER_HISTORIA_CLINICA")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede consultar historias clínicas");
+            }
+
             HistoriaClinica historia;
             std::string mensaje;
             const ResultadoOperacion resultado = historiaService_.consultar(idPaciente, historia, mensaje);
@@ -172,6 +178,11 @@ void HistoriaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             std::string rol;
             if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "VER_HISTORIA_CLINICA")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede modificar historias clínicas");
             }
 
             CambiosHistoria cambios;
@@ -202,6 +213,11 @@ void HistoriaRoutes::registrarRutas(crow::App<crow::CORSHandler>& app) {
             std::string rol;
             if (!ApiHttp::peticionAutorizada(peticion, correo, rol)) {
                 return ApiHttp::respuestaError(401, "Token ausente o inválido");
+            }
+
+            UsuarioRepository usuarios;
+            if (!usuarios.tienePermiso(correo, "VER_HISTORIA_CLINICA")) {
+                return ApiHttp::respuestaError(403, "Acceso denegado: su rol no puede eliminar historias clínicas");
             }
 
             std::string mensaje;

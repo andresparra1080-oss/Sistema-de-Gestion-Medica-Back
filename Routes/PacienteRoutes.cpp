@@ -42,8 +42,35 @@ std::string normalizarRol(const std::string& rol) {
     return limpio;
 }
 
+std::string canonizarRol(const std::string& rol) {
+    std::string normalizado = normalizarRol(rol);
+    for (char& c : normalizado) {
+        if (c == '/' || c == '-' || c == '_') {
+            c = ' ';
+        }
+    }
+
+    std::string limpio;
+    limpio.reserve(normalizado.size());
+    bool anteriorEspacio = false;
+    for (char c : normalizado) {
+        if (c == ' ') {
+            if (!limpio.empty() && !anteriorEspacio) {
+                limpio.push_back(' ');
+            }
+            anteriorEspacio = true;
+            continue;
+        }
+
+        limpio.push_back(c);
+        anteriorEspacio = false;
+    }
+
+    return limpio;
+}
+
 bool tienePermisoPaciente(const std::string& rol) {
-    const std::string rolNormalizado = normalizarRol(rol);
+    const std::string rolNormalizado = canonizarRol(rol);
     return rolNormalizado == "capitan" ||
            rolNormalizado == "capitan medico principal" ||
            rolNormalizado == "cirujano" ||

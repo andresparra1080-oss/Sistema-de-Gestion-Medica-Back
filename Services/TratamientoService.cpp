@@ -155,6 +155,12 @@ ResultadoOperacion TratamientoService::registrar(
     Tratamiento& registrado,
     std::string& mensaje) const {
 
+    UsuarioRepository usuarios;
+    if (!usuarios.tienePermiso(correoUsuario, "PRESCRIBIR_TRATAMIENTOS")) {
+        mensaje = "Acceso denegado: su rol no puede registrar tratamientos";
+        return ResultadoOperacion::SinPermiso;
+    }
+
     if (datos.getIdPaciente() <= 0 || datos.getIdMedicamento() <= 0) {
         mensaje = "Debe seleccionar un paciente y un medicamento válidos";
         return ResultadoOperacion::DatosInvalidos;
@@ -204,7 +210,6 @@ ResultadoOperacion TratamientoService::registrar(
 
     // El usuario que registra se obtiene de la sesión, no del cuerpo
     // de la petición.
-    UsuarioRepository usuarios;
     const long long idUsuario = usuarios.obtenerIdPorCorreo(correoUsuario);
 
     if (idUsuario <= 0) {

@@ -1,5 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
 
+if(WIN32)
+    set(MSYS2_MINGW64 "C:/msys64/mingw64/bin")
+    if(EXISTS "${MSYS2_MINGW64}/gcc.exe")
+        set(CMAKE_C_COMPILER "${MSYS2_MINGW64}/gcc.exe" CACHE FILEPATH "MSYS2 MinGW C compiler" FORCE)
+    endif()
+    if(EXISTS "${MSYS2_MINGW64}/g++.exe")
+        set(CMAKE_CXX_COMPILER "${MSYS2_MINGW64}/g++.exe" CACHE FILEPATH "MSYS2 MinGW C++ compiler" FORCE)
+    endif()
+    if(EXISTS "${MSYS2_MINGW64}/mingw32-make.exe")
+        set(CMAKE_MAKE_PROGRAM "${MSYS2_MINGW64}/mingw32-make.exe" CACHE FILEPATH "MSYS2 MinGW make" FORCE)
+    endif()
+endif()
+
 project(HeartMedBackend LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
